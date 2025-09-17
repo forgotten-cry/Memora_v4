@@ -3,16 +3,19 @@ import { useAppContext } from '../../context/AppContext';
 import PillIcon from '../icons/PillIcon';
 import ForkKnifeIcon from '../icons/ForkKnifeIcon';
 import GlassWaterIcon from '../icons/GlassWaterIcon';
+import MusicIcon from '../icons/MusicIcon';
 
 interface RemindersListProps {
     onBack: () => void;
 }
 
-const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration'; className?: string }> = ({ icon, className }) => {
+// fix: Add 'music' to the supported icon types to match the Reminder type.
+const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration' | 'music'; className?: string }> = ({ icon, className }) => {
     switch (icon) {
         case 'medication': return <PillIcon className={className} />;
         case 'meal': return <ForkKnifeIcon className={className} />;
         case 'hydration': return <GlassWaterIcon className={className} />;
+        case 'music': return <MusicIcon className={className} />;
         default: return null;
     }
 };

@@ -5,7 +5,7 @@ export interface Reminder {
   title: string;
   time: string;
   completed: boolean;
-  icon: 'medication' | 'meal' | 'hydration';
+  icon: 'medication' | 'meal' | 'hydration' | 'music';
   notified: boolean;
 }
 
@@ -66,6 +66,7 @@ export enum PatientScreen {
     COGNITIVE_GAMES = 'COGNITIVE_GAMES',
     MEMORY_ALBUM = 'MEMORY_ALBUM',
     VOICE_MESSAGES = 'VOICE_MESSAGES',
+    MUSIC_THERAPY = 'MUSIC_THERAPY',
 }
 
 export interface Beacon {

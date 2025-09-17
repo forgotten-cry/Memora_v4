@@ -12,12 +12,15 @@ import ImageIcon from '../icons/ImageIcon';
 import VoiceMessagePlayer from '../shared/VoiceMessagePlayer';
 import VoiceRecorder from '../shared/VoiceRecorder';
 import soundService from '../../services/soundService';
+import MusicIcon from '../icons/MusicIcon';
 
-const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration'; className?: string }> = ({ icon, className }) => {
+// fix: Add 'music' to the supported icon types to match the Reminder type.
+const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration' | 'music'; className?: string }> = ({ icon, className }) => {
     switch (icon) {
         case 'medication': return <PillIcon className={className} />;
         case 'meal': return <ForkKnifeIcon className={className} />;
         case 'hydration': return <GlassWaterIcon className={className} />;
+        case 'music': return <MusicIcon className={className} />;
         default: return null;
     }
 };

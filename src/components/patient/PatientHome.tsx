@@ -7,6 +7,7 @@ import CompanionIcon from '../icons/CompanionIcon';
 import BrainIcon from '../icons/BrainIcon';
 import ImageIcon from '../icons/ImageIcon';
 import VoicemailIcon from '../icons/VoicemailIcon';
+import MusicIcon from '../icons/MusicIcon';
 import SOSSlider from './SOSSlider';
 
 interface PatientHomeProps {
@@ -46,6 +47,7 @@ const PatientHome: React.FC<PatientHomeProps> = ({ setScreen }) => {
     { name: 'My Reminders', icon: <RemindersIcon className="w-8 h-8"/>, screen: PatientScreen.REMINDERS },
     { name: 'AI Companion', icon: <CompanionIcon className="w-8 h-8"/>, screen: PatientScreen.AI_COMPANION },
     { name: 'Voice Messages', icon: <VoicemailIcon className="w-8 h-8"/>, screen: PatientScreen.VOICE_MESSAGES },
+    { name: 'Music Therapy', icon: <MusicIcon className="w-8 h-8"/>, screen: PatientScreen.MUSIC_THERAPY },
     { name: 'Memory Game', icon: <BrainIcon className="w-8 h-8"/>, screen: PatientScreen.COGNITIVE_GAMES },
     { name: 'Memory Album', icon: <ImageIcon className="w-8 h-8"/>, screen: PatientScreen.MEMORY_ALBUM },
   ];
