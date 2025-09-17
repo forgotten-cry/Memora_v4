@@ -93,6 +93,10 @@ export type AppAction =
   | { type: 'ACKNOWLEDGE_ALERTS' }
   | { type: 'MARK_REMINDER_NOTIFIED'; payload: string };
 
+// UI actions
+export type UIAction =
+  | { type: 'SET_VIEW_MODE'; payload: ViewMode };
+
 // Auth and UI actions
 export type AuthAction =
   | { type: 'LOGIN_SUCCESS'; payload: CurrentUser }
@@ -100,4 +104,5 @@ export type AuthAction =
   | { type: 'SET_DEV_MODE'; payload: boolean };
 
 // Extend AppAction to allow unioning with AuthAction where needed
-export type AppActionAll = AppAction | AuthAction;
+// Include UIAction (e.g., SET_VIEW_MODE) in the full action union used across the app
+export type AppActionAll = AppAction | AuthAction | UIAction;

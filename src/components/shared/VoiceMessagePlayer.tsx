@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VoiceMessage, SenderRole } from '../../types';
+import nativeTts from '../../services/nativeTts';
 import PlayIcon from '../icons/PlayIcon';
 import PauseIcon from '../icons/PauseIcon';
 import UserIcon from '../icons/UserIcon';
@@ -77,6 +78,22 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
   }, []);
 
   const speakFallback = (explicitText?: string) => {
+    const text = explicitText || `${message.senderName} says: hello. This is a short voice message for you.`;
+    // Prefer native TTS when available (Capacitor plugin)
+    if (nativeTts.isNative) {
+      nativeTts.speak(text).catch((e: any) => {
+        console.warn('nativeTts failed, falling back to Web Speech API', e);
+      });
+      setIsPlaying(true);
+      setUsingTTS(true);
+      // We don't have fine-grained end events from nativeTts here; optimistic behavior
+      setTimeout(() => {
+        setIsPlaying(false);
+        setUsingTTS(false);
+      }, Math.max(1500, message.duration * 1000));
+      return;
+    }
+
     if (!('speechSynthesis' in window)) {
       console.warn('SpeechSynthesis not available in this environment.');
       setIsPlaying(false);
@@ -88,7 +105,6 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
     // Cancel any existing speech
     synth.cancel();
 
-    const text = explicitText || `${message.senderName} says: hello. This is a short voice message for you.`;
     const utterance = new SpeechSynthesisUtterance(text);
     ttsUtteranceRef.current = utterance;
 

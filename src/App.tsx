@@ -6,10 +6,13 @@ import { ViewMode } from './types';
 import { useAppContext } from './context/AppContext';
 import soundService from './services/soundService';
 import DemoLogin from './components/shared/DemoLogin';
+import LoginPage from './components/shared/LoginPage';
+import AcknowledgeModal from './components/shared/AcknowledgeModal';
 
 const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.PATIENT);
+  // Use global currentView from app state so login can control the dashboard
+  const viewMode = state.currentView || ViewMode.PATIENT;
 
   // Effect to unlock audio on the first user interaction
   useEffect(() => {
@@ -62,13 +65,11 @@ const App: React.FC = () => {
 
 
   const handleSwitchView = () => {
-    if (viewMode === ViewMode.PATIENT) {
-      setViewMode(ViewMode.CAREGIVER);
-    } else if (viewMode === ViewMode.CAREGIVER) {
-      setViewMode(ViewMode.FAMILY);
-    } else {
-      setViewMode(ViewMode.PATIENT);
-    }
+    let next = ViewMode.PATIENT;
+    if (viewMode === ViewMode.PATIENT) next = ViewMode.CAREGIVER;
+    else if (viewMode === ViewMode.CAREGIVER) next = ViewMode.FAMILY;
+    else next = ViewMode.PATIENT;
+    dispatch({ type: 'SET_VIEW_MODE', payload: next });
   };
 
   const getNextViewName = () => {
@@ -92,11 +93,14 @@ const App: React.FC = () => {
 
   const canShowMasterSwitch = !!state.currentUser || !!state.devMode;
 
+  const [showLogin, setShowLogin] = React.useState(false);
+  const [showAckForAlertId, setShowAckForAlertId] = React.useState<string | null>(null);
+
   return (
     // The main background is now on the body tag in index.html
     <div className="min-h-screen font-sans antialiased text-gray-300"> 
       <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
-        <DemoLogin />
+        <button onClick={() => setShowLogin(true)} className="px-3 py-1 bg-slate-800/80 rounded">Login</button>
         <div className="text-right">
           {state.currentUser ? (
             <div className="text-xs text-slate-300">{state.currentUser.username}</div>
@@ -114,6 +118,28 @@ const App: React.FC = () => {
           </button>
         )}
       </div>
+      {showLogin && <LoginPage onClose={() => setShowLogin(false)} />}
+
+      {/* Show acknowledge modal for the first critical alert that requires acknowledgment */}
+      {state.alerts.length > 0 && !showAckForAlertId && (() => {
+        const critical = state.alerts.find(a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement);
+        if (critical) {
+          setShowAckForAlertId(critical.id);
+        }
+        return null;
+      })()}
+
+      {showAckForAlertId && (() => {
+        const a = state.alerts.find(x => x.id === showAckForAlertId);
+        if (!a) return null;
+        return (
+          <AcknowledgeModal
+            alertId={a.id}
+            alertType={a.type === 'FALL' ? 'FALL' : 'SOS'}
+            onClose={() => setShowAckForAlertId(null)}
+          />
+        );
+      })()}
       
       <div className="container mx-auto max-w-lg p-2 sm:p-4">
         {renderView()}

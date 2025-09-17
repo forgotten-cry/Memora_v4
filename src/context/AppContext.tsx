@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useRef } from 'react';
 import realtimeService from '../services/realtimeService';
-import { Reminder, Alert, AppActionAll, Memory, EventLogItem, SharedQuote, VoiceMessage, SenderRole, CurrentUser } from '../types';
+import { Reminder, Alert, AppActionAll, Memory, EventLogItem, SharedQuote, VoiceMessage, SenderRole, CurrentUser, ViewMode } from '../types';
 // Use public audio files for sample voice messages (avoid embedding Base64 in source)
 const VOICE_MESSAGE_LEO_URL = '/audio/voice_leo.mp3';
 const VOICE_MESSAGE_SAM_URL = '/audio/voice_sam.mp3';
@@ -14,6 +14,7 @@ interface AppState {
   voiceMessages: VoiceMessage[];
   currentUser?: { username: string; role?: string } | null;
   devMode?: boolean;
+  currentView?: ViewMode;
 }
 
 const initialState: AppState = {
@@ -59,6 +60,7 @@ const initialState: AppState = {
   ],
   currentUser: null,
   devMode: false,
+  currentView: ViewMode.PATIENT,
 };
 
 const appReducer = (state: AppState, action: AppActionAll): AppState => {
@@ -175,9 +177,15 @@ const appReducer = (state: AppState, action: AppActionAll): AppState => {
             ),
         };
     case 'LOGIN_SUCCESS':
+      // Auto-switch view based on the logged-in user's role if present
+      const role = (action.payload as CurrentUser)?.role?.toUpperCase?.();
+      let view = ViewMode.PATIENT;
+      if (role === 'CAREGIVER') view = ViewMode.CAREGIVER;
+      if (role === 'FAMILY') view = ViewMode.FAMILY;
       return {
         ...state,
         currentUser: action.payload,
+        currentView: view,
       };
     case 'LOGOUT':
       return {
@@ -188,6 +196,11 @@ const appReducer = (state: AppState, action: AppActionAll): AppState => {
       return {
         ...state,
         devMode: action.payload,
+      };
+    case 'SET_VIEW_MODE':
+      return {
+        ...state,
+        currentView: action.payload,
       };
     default:
       return state;

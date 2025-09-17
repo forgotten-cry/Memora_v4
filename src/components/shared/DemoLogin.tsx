@@ -8,6 +8,7 @@ const DemoLogin: React.FC = () => {
   const [url, setUrl] = useState<string>('ws://localhost:8081');
   const [username, setUsername] = useState<string>('demo');
   const [password, setPassword] = useState<string>('demo');
+  const [role, setRole] = useState<string>('FAMILY');
   const [connected, setConnected] = useState(false);
   const { dispatch } = useAppContext();
   const [devMode, setDevMode] = useState(false);
@@ -24,10 +25,10 @@ const DemoLogin: React.FC = () => {
       // make it available globally so AppContext picks it up
       (window as any).__DEMO_REALTIME_URL = url;
       realtimeService.connect(url);
-      realtimeService.login(username, password, 'demo');
+  realtimeService.login(username, password, 'demo');
       setConnected(true);
       // Dispatch a local login success for demo purposes
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { username, role: username === 'patient' ? 'PATIENT' : username === 'caregiver' ? 'CAREGIVER' : 'FAMILY' } });
+  dispatch({ type: 'LOGIN_SUCCESS', payload: { username, role } });
     } catch (e) {
       console.error('Failed to connect to demo server', e);
       setConnected(false);
@@ -53,6 +54,11 @@ const DemoLogin: React.FC = () => {
         <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-400' : 'bg-red-500'}`} title={connected ? 'Connected' : 'Disconnected'} />
         <input className="input" value={url} onChange={e => setUrl(e.target.value)} placeholder="ws://server:8081" />
         <input className="input" value={username} onChange={e => setUsername(e.target.value)} placeholder="username" />
+        <select className="input" value={role} onChange={e => setRole(e.target.value)}>
+          <option value="PATIENT">Patient</option>
+          <option value="CAREGIVER">Caregiver</option>
+          <option value="FAMILY">Family</option>
+        </select>
         <input className="input" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" />
         {!connected ? (
           <button className="btn" onClick={handleConnect}>Connect</button>

@@ -57,6 +57,26 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
   }, []);
 
   const startRecording = async () => {
+    // If running in Capacitor native, request RECORD_AUDIO permission first
+    try {
+      const isCapacitor = typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform && (window as any).Capacitor.isNativePlatform();
+      if (isCapacitor) {
+        try {
+          // dynamic import to avoid runtime errors on web
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { Permissions } = require('@capacitor/core');
+          const res = await Permissions.request({ name: 'microphone' as any });
+          if (res && res.state === 'denied') {
+            alert('Microphone permission denied. Please enable it in system settings.');
+            return;
+          }
+        } catch (permErr) {
+          console.warn('Capacitor permission request failed, attempting browser flow', permErr);
+        }
+      }
+    } catch (err) {
+      console.warn('Permission check error', err);
+    }
     if (micPermission === 'denied') {
         alert("Microphone access has been blocked. Please enable it in your browser's site settings to record a message.");
         return;
@@ -68,7 +88,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onNewMessage, disabled = 
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: supportedMimeType });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
