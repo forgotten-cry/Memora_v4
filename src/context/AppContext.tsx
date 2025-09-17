@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { Reminder, Alert, AppAction, Memory, EventLogItem, SharedQuote, VoiceMessage, SenderRole } from '../types';
-// fix: VOICE_MESSAGE_SAM_URL is not exported from audioData. Using VOICE_MESSAGE_LEO_URL as a placeholder.
-import { VOICE_MESSAGE_LEO_URL } from '../assets/audioData';
+import { VOICE_MESSAGE_LEO_URL, VOICE_MESSAGE_SAM_URL } from '../assets/audioData';
 
 interface AppState {
   reminders: Reminder[];
@@ -39,16 +38,15 @@ const initialState: AppState = {
       { 
           id: 'vm1', 
           audioUrl: VOICE_MESSAGE_LEO_URL,
-          duration: 1,
+          duration: 4,
           senderRole: SenderRole.FAMILY, 
           senderName: 'Your Grandson, Leo',
           timestamp: '10:30 AM'
       },
        { 
           id: 'vm2', 
-          // fix: Using VOICE_MESSAGE_LEO_URL as a placeholder and adjusting duration.
-          audioUrl: VOICE_MESSAGE_LEO_URL,
-          duration: 1,
+          audioUrl: VOICE_MESSAGE_SAM_URL,
+          duration: 4,
           senderRole: SenderRole.CAREGIVER, 
           senderName: 'Your Caregiver, Sam',
           timestamp: '11:15 AM'
