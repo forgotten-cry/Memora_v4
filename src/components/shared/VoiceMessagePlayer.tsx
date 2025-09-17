@@ -28,6 +28,8 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const ttsUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [usingTTS, setUsingTTS] = useState(false);
   const isUserMessage = message.senderRole === SenderRole.PATIENT;
 
   useEffect(() => {
@@ -45,25 +47,113 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
       setCurrentTime(0);
     };
 
+    const handleError = () => {
+      // If the audio fails to load or play, fallback to TTS
+      // We only trigger TTS when the user attempted to play
+      if (isPlaying) {
+        speakFallback();
+      }
+    };
+
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
   }, []);
 
+  useEffect(() => {
+    // Cleanup any lingering TTS on unmount
+    return () => {
+      if (window.speechSynthesis && ttsUtteranceRef.current) {
+        window.speechSynthesis.cancel();
+        ttsUtteranceRef.current = null;
+      }
+    };
+  }, []);
+
+  const speakFallback = (explicitText?: string) => {
+    if (!('speechSynthesis' in window)) {
+      console.warn('SpeechSynthesis not available in this environment.');
+      setIsPlaying(false);
+      setUsingTTS(false);
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+    // Cancel any existing speech
+    synth.cancel();
+
+    const text = explicitText || `${message.senderName} says: hello. This is a short voice message for you.`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    ttsUtteranceRef.current = utterance;
+
+    // Pick a human-like voice if available (prefer en-US variants)
+    const voices = synth.getVoices();
+    let chosen = voices.find(v => /en[-_]?us/i.test(v.lang) && /Google|Microsoft|Apple|Samantha|Daniel|Alex/i.test(v.name));
+    if (!chosen) chosen = voices.find(v => /en/i.test(v.lang)) || voices[0];
+    if (chosen) utterance.voice = chosen;
+
+    utterance.onstart = () => {
+      setUsingTTS(true);
+      setIsPlaying(true);
+    };
+    utterance.onend = () => {
+      setIsPlaying(false);
+      setUsingTTS(false);
+      ttsUtteranceRef.current = null;
+    };
+    utterance.onerror = () => {
+      setIsPlaying(false);
+      setUsingTTS(false);
+      ttsUtteranceRef.current = null;
+    };
+
+    synth.speak(utterance);
+  };
+
+  const stopAnyPlayback = () => {
+    // Stop audio element
+    const audio = audioRef.current;
+    if (audio && !audio.paused) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    // Stop TTS
+    if (window.speechSynthesis && ttsUtteranceRef.current) {
+      window.speechSynthesis.cancel();
+      ttsUtteranceRef.current = null;
+    }
+    setIsPlaying(false);
+    setUsingTTS(false);
+  };
+
   const togglePlay = () => {
     const audio = audioRef.current;
-    if (!audio) return;
 
     if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play().catch(e => console.error("Audio playback error:", e));
+      stopAnyPlayback();
+      return;
     }
-    setIsPlaying(!isPlaying);
+
+    // Try audio playback first if there is an audioUrl
+    if (audio && message.audioUrl) {
+      audio.play().then(() => {
+        setIsPlaying(true);
+      }).catch((err) => {
+        console.warn('Audio playback failed, falling back to TTS:', err);
+        // fallback to TTS
+        speakFallback();
+      });
+      return;
+    }
+
+    // Otherwise use TTS fallback
+    speakFallback();
   };
   
   const formatTime = (timeInSeconds: number) => {

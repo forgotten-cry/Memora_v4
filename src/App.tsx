@@ -5,6 +5,7 @@ import FamilyView from './components/family/FamilyView';
 import { ViewMode } from './types';
 import { useAppContext } from './context/AppContext';
 import soundService from './services/soundService';
+import DemoLogin from './components/shared/DemoLogin';
 
 const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -89,16 +90,29 @@ const App: React.FC = () => {
     }
   }
 
+  const canShowMasterSwitch = !!state.currentUser || !!state.devMode;
+
   return (
     // The main background is now on the body tag in index.html
     <div className="min-h-screen font-sans antialiased text-gray-300"> 
-      <div className="absolute top-4 right-4 z-50">
-        <button
-          onClick={handleSwitchView}
-          className="px-4 py-2 bg-slate-800/80 border border-slate-700 backdrop-blur-sm text-sm text-gray-300 rounded-full shadow-lg hover:bg-slate-700/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-slate-500"
-        >
-          Switch to {getNextViewName()} View
-        </button>
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+        <DemoLogin />
+        <div className="text-right">
+          {state.currentUser ? (
+            <div className="text-xs text-slate-300">{state.currentUser.username}</div>
+          ) : (
+            <div className="text-xs text-slate-500">Not connected</div>
+          )}
+          {state.devMode && <div className="text-xxs text-yellow-300">Dev Mode</div>}
+        </div>
+        {canShowMasterSwitch && (
+          <button
+            onClick={handleSwitchView}
+            className="px-4 py-2 bg-slate-800/80 border border-slate-700 backdrop-blur-sm text-sm text-gray-300 rounded-full shadow-lg hover:bg-slate-700/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-slate-500"
+          >
+            Switch to {getNextViewName()} View
+          </button>
+        )}
       </div>
       
       <div className="container mx-auto max-w-lg p-2 sm:p-4">

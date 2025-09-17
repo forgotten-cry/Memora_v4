@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { Reminder, Alert, AppAction, Memory, EventLogItem, SharedQuote, VoiceMessage, SenderRole } from '../types';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect, useRef } from 'react';
+import realtimeService from '../services/realtimeService';
+import { Reminder, Alert, AppActionAll, Memory, EventLogItem, SharedQuote, VoiceMessage, SenderRole, CurrentUser } from '../types';
 // Use public audio files for sample voice messages (avoid embedding Base64 in source)
 const VOICE_MESSAGE_LEO_URL = '/audio/voice_leo.mp3';
 const VOICE_MESSAGE_SAM_URL = '/audio/voice_sam.mp3';
@@ -11,6 +12,8 @@ interface AppState {
   eventLog: EventLogItem[];
   sharedQuote: SharedQuote | null;
   voiceMessages: VoiceMessage[];
+  currentUser?: { username: string; role?: string } | null;
+  devMode?: boolean;
 }
 
 const initialState: AppState = {
@@ -54,9 +57,11 @@ const initialState: AppState = {
           timestamp: '11:15 AM'
       },
   ],
+  currentUser: null,
+  devMode: false,
 };
 
-const appReducer = (state: AppState, action: AppAction): AppState => {
+const appReducer = (state: AppState, action: AppActionAll): AppState => {
   switch (action.type) {
     case 'COMPLETE_REMINDER':
       const completedReminder = state.reminders.find(r => r.id === action.payload);
@@ -169,6 +174,21 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
                 r.id === action.payload ? { ...r, notified: true } : r
             ),
         };
+    case 'LOGIN_SUCCESS':
+      return {
+        ...state,
+        currentUser: action.payload,
+      };
+    case 'LOGOUT':
+      return {
+        ...state,
+        currentUser: null,
+      };
+    case 'SET_DEV_MODE':
+      return {
+        ...state,
+        devMode: action.payload,
+      };
     default:
       return state;
   }
@@ -176,14 +196,58 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 
 const AppContext = createContext<{
   state: AppState;
-  dispatch: React.Dispatch<AppAction>;
+  dispatch: React.Dispatch<AppActionAll>;
 } | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const appliedRemoteActions = useRef(new Set<string>());
+
+  useEffect(() => {
+    // If demo realtime URL is provided via global, connect automatically for presentations.
+    const wsUrl = (window as any).__DEMO_REALTIME_URL as string | undefined;
+    if (!wsUrl) return;
+
+    realtimeService.connect(wsUrl);
+
+    // Register incoming actions to apply remotely
+    realtimeService.onAction((action: any) => {
+      try {
+        // Ignore if it's already applied (simple dedupe using an id)
+        const rid = action?._remoteId;
+        if (rid && appliedRemoteActions.current.has(rid)) return;
+        if (rid) appliedRemoteActions.current.add(rid);
+        // Dispatch the remote action locally
+        dispatch(action);
+      } catch (e) {
+        console.warn('Error applying remote action', e);
+      }
+    });
+
+    return () => {
+      realtimeService.disconnect();
+    };
+  }, []);
+
+  // Wrap dispatch to optionally forward actions to the realtime server when enabled
+  const wrappedDispatch: React.Dispatch<AppActionAll> = (action) => {
+    // Forward to realtime server if configured
+    const wsUrl = (window as any).__DEMO_REALTIME_URL as string | undefined;
+    if (wsUrl && realtimeService) {
+      try {
+        // Add a small remote id to help dedupe
+        const actionToSend = { ...action, _remoteId: (action as any)._remoteId || `r-${Date.now()}-${Math.random().toString(36).slice(2,8)}` };
+        realtimeService.sendAction(actionToSend);
+      } catch (e) {
+        console.warn('Failed to send action to realtime server', e);
+      }
+    }
+    // Apply locally
+    dispatch(action as any);
+  };
 
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider value={{ state, dispatch: wrappedDispatch }}>
       {children}
     </AppContext.Provider>
   );

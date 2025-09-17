@@ -58,6 +58,11 @@ export interface VoiceMessage {
   timestamp: string;
 }
 
+export interface CurrentUser {
+  username: string;
+  role?: 'PATIENT' | 'FAMILY' | 'CAREGIVER' | string;
+}
+
 export enum PatientScreen {
     HOME = 'HOME',
     NAVIGATION = 'NAVIGATION',
@@ -87,3 +92,12 @@ export type AppAction =
   | { type: 'ADD_VOICE_MESSAGE'; payload: VoiceMessage }
   | { type: 'ACKNOWLEDGE_ALERTS' }
   | { type: 'MARK_REMINDER_NOTIFIED'; payload: string };
+
+// Auth and UI actions
+export type AuthAction =
+  | { type: 'LOGIN_SUCCESS'; payload: CurrentUser }
+  | { type: 'LOGOUT' }
+  | { type: 'SET_DEV_MODE'; payload: boolean };
+
+// Extend AppAction to allow unioning with AuthAction where needed
+export type AppActionAll = AppAction | AuthAction;
