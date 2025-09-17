@@ -96,12 +96,38 @@ const AcknowledgeModal: React.FC<{ alertId: string; alertType: 'SOS' | 'FALL'; o
   return (
     <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 99999 }} aria-hidden={false}>
       <div className="absolute inset-0 bg-black/60" style={{ zIndex: 99998 }} />
-      <div ref={modalRef} role="dialog" aria-modal="true" className="relative bg-slate-900 rounded-xl shadow-2xl w-full max-w-sm p-6 border border-slate-700" style={{ zIndex: 99999 }}>
-        <h3 className="text-lg font-bold mb-2">Important Alert</h3>
-        <p className="text-sm text-slate-300 mb-4">A critical {alertType === 'SOS' ? 'SOS' : 'Fall'} alert is active. Please acknowledge to stop the alarm.</p>
+      <div 
+        ref={modalRef} 
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="alert-title"
+        aria-describedby="alert-description"
+        className="relative bg-slate-900 rounded-xl shadow-2xl w-full max-w-sm p-6 border border-slate-700" 
+        style={{ zIndex: 99999 }}
+      >
+        <h3 id="alert-title" className="text-lg font-bold mb-2">Important Alert</h3>
+        <p id="alert-description" className="text-sm text-slate-300 mb-4">
+          A critical {alertType === 'SOS' ? 'SOS' : 'Fall'} alert is active. Please acknowledge to stop the alarm.
+        </p>
         <div className="flex justify-end gap-2">
-          <button onClick={acknowledge} className="px-4 py-2 bg-red-600 rounded">Acknowledge</button>
-          <button onClick={onClose} className="px-4 py-2 bg-slate-700 rounded">Close</button>
+          <button 
+            onClick={acknowledge}
+            id={`acknowledge-${alertId}`}
+            name={`acknowledge-${alertType.toLowerCase()}-alert`}
+            aria-label={`Acknowledge ${alertType} alert`}
+            className="px-4 py-2 bg-red-600 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+          >
+            Acknowledge
+          </button>
+          <button 
+            onClick={onClose}
+            id={`close-${alertId}`}
+            name="close-alert-modal"
+            aria-label="Close alert modal"
+            className="px-4 py-2 bg-slate-700 rounded hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
