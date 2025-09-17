@@ -47,8 +47,11 @@ const App: React.FC = () => {
   // Centralized alert sound control: only play alerts for caregiver/family or when in devMode.
   useEffect(() => {
     const unack = state.alerts.filter(a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement);
-    const role = state.currentUser?.role?.toUpperCase?.();
-    const canHear = state.devMode || role === 'CAREGIVER' || role === 'FAMILY';
+  const role = state.currentUser?.role?.toUpperCase?.();
+  // Never grant patients the ability to hear critical alerts via devMode.
+  // Dev mode allows developers to test caregiver/family flows, but it should
+  // not elevate a PATIENT to hear SOS/FALL sounds.
+  const canHear = (role === 'CAREGIVER' || role === 'FAMILY') || (state.devMode && (role === 'CAREGIVER' || role === 'FAMILY'));
 
     if (!canHear) {
       soundService.stopSosAlert();
