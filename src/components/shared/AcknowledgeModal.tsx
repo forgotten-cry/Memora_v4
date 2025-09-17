@@ -1,28 +1,54 @@
 import React, { useEffect, useRef } from 'react';
-import soundService from '../../services/soundService';
+import sosAsset from '../../assets/audio/sos_alert.mp3';
+import fallAsset from '../../assets/audio/fall_alert.mp3';
 import { useAppContext } from '../../context/AppContext';
 
 const AcknowledgeModal: React.FC<{ alertId: string; alertType: 'SOS' | 'FALL'; onClose?: () => void }> = ({ alertId, alertType, onClose }) => {
   const { dispatch } = useAppContext();
   const modalRef = useRef<HTMLDivElement | null>(null);
   const lastActive = useRef<HTMLElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     lastActive.current = document.activeElement as HTMLElement | null;
     setTimeout(() => {
       modalRef.current?.querySelector<HTMLElement>('button')?.focus();
     }, 0);
-    // When the modal mounts, ensure the correct alert audio is playing and attached
-    if (alertType === 'SOS') {
-      if (!soundService.isSosPlaying()) {
-        soundService.playSosAlert();
-      }
+
+    // Initialize and play the appropriate audio
+    if (!audioRef.current) {
+      audioRef.current = new Audio(alertType === 'SOS' ? sosAsset : fallAsset);
+      audioRef.current.loop = true;
+      audioRef.current.preload = 'auto';
+      (audioRef.current as any).playsInline = true;
+      audioRef.current.volume = 1.0;
+
+      const unlockAndPlay = async () => {
+        try {
+          // Attempt to unlock audio context (important for iOS)
+          const unlockAudio = audioRef.current;
+          if (unlockAudio) {
+            unlockAudio.muted = true;
+            await unlockAudio.play();
+            unlockAudio.pause();
+            unlockAudio.currentTime = 0;
+            unlockAudio.muted = false;
+            
+            // Now play the actual alert
+            if (audioRef.current) {
+              audioRef.current.load();
+              await audioRef.current.play();
+              console.debug(`[AcknowledgeModal] ${alertType} alert playing successfully`);
+            }
+          }
+        } catch (e) {
+          console.error(`Error initializing/playing ${alertType} audio:`, e);
+        }
+      };
+
+      unlockAndPlay();
     }
-    if (alertType === 'FALL') {
-      if (!soundService.isFallPlaying()) {
-        soundService.playFallAlert();
-      }
-    }
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -47,12 +73,22 @@ const AcknowledgeModal: React.FC<{ alertId: string; alertType: 'SOS' | 'FALL'; o
     return () => {
       document.removeEventListener('keydown', onKey);
       lastActive.current?.focus?.();
+      // Clean up audio on unmount
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
     };
-  }, [onClose]);
+  }, [alertType, onClose]);
 
   const acknowledge = () => {
-    if (alertType === 'SOS') soundService.stopSosAlert();
-    if (alertType === 'FALL') soundService.stopFallAlert();
+    // Stop the audio when acknowledged
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
     dispatch({ type: 'ACKNOWLEDGE_ALERTS' });
     if (onClose) onClose();
   };
