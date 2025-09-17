@@ -11,6 +11,16 @@ import VoiceMessagePlayer from '../shared/VoiceMessagePlayer';
 import VoiceRecorder from '../shared/VoiceRecorder';
 import soundService from '../../services/soundService';
 import MusicIcon from '../icons/MusicIcon';
+import NotificationSound from '../shared/NotificationSound';
+
+// Helper to check if a reminder is due (time-only, compares hh:mm against now)
+function isReminderDue(reminderTime: string) {
+  const now = new Date();
+  const [h, m] = reminderTime.split(':');
+  const reminderDate = new Date(now);
+  reminderDate.setHours(Number(h), Number(m), 0, 0);
+  return now >= reminderDate;
+}
 
 const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration' | 'music'; className?: string }> = ({ icon, className }) => {
     switch (icon) {
@@ -26,6 +36,15 @@ const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration' | 'musi
 const CaregiverView: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { reminders, alerts, voiceMessages } = state;
+
+  // Find the first due and unnotified reminder
+  const dueReminder = reminders.find((r: any) => !r.completed && !r.notified && isReminderDue(r.time));
+
+  useEffect(() => {
+    if (dueReminder) {
+      dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: dueReminder.id });
+    }
+  }, [dueReminder, dispatch]);
   
   const unacknowledgedAlerts = alerts.filter(
     a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement
@@ -98,6 +117,8 @@ const CaregiverView: React.FC = () => {
 
   return (
     <div className="relative space-y-6 p-4 sm:p-6 bg-slate-900/70 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl">
+  {/* Play notification sound if a reminder is due */}
+  <NotificationSound trigger={!!dueReminder} />
       <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-slate-700"></div>
       <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-slate-700"></div>
 

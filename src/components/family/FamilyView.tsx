@@ -1,3 +1,12 @@
+import NotificationSound from '../shared/NotificationSound';
+// Helper to check if a reminder is due
+function isReminderDue(reminderTime: string) {
+    const now = new Date();
+    const [h, m] = reminderTime.split(':');
+    const reminderDate = new Date(now);
+    reminderDate.setHours(Number(h), Number(m), 0, 0);
+    return now >= reminderDate;
+}
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { getAIComfortingQuote, isGeminiConfigured, missingApiKeyError } from '../../services/geminiService';
@@ -28,6 +37,15 @@ const FamilyView: React.FC = () => {
     const { state, dispatch } = useAppContext();
     const { reminders, alerts, eventLog, voiceMessages } = state;
 
+        // Find the first due and unnotified reminder
+        const dueReminder = reminders.find((r: any) => !r.completed && !r.notified && isReminderDue(r.time));
+
+        useEffect(() => {
+            if (dueReminder) {
+                dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: dueReminder.id });
+            }
+        }, [dueReminder, dispatch]);
+
     const [imageUrl, setImageUrl] = useState('');
     const [caption, setCaption] = useState('');
     const [sharedBy, setSharedBy] = useState('');
@@ -40,14 +58,22 @@ const FamilyView: React.FC = () => {
 
     useEffect(() => {
         if (unacknowledgedAlerts.length > 0) {
-            soundService.playSosAlert();
+            // Prefer SOS if both present, else FALL
+            if (unacknowledgedAlerts.some(a => a.type === 'SOS')) {
+                soundService.stopFallAlert();
+                soundService.playSosAlert();
+            } else if (unacknowledgedAlerts.some(a => a.type === 'FALL')) {
+                soundService.stopSosAlert();
+                soundService.playFallAlert();
+            }
         } else {
             soundService.stopSosAlert();
+            soundService.stopFallAlert();
         }
-        
         // Cleanup sound on component unmount
         return () => {
             soundService.stopSosAlert();
+            soundService.stopFallAlert();
         };
     }, [unacknowledgedAlerts.length]);
 
@@ -160,7 +186,9 @@ const FamilyView: React.FC = () => {
         <p className="text-md text-slate-400">Stay connected with your loved one</p>
       </header>
       
-      {unacknowledgedAlerts.length > 0 && (
+    {/* Play notification sound if a reminder is due */}
+    <NotificationSound trigger={!!dueReminder} />
+    {unacknowledgedAlerts.length > 0 && (
         <div className="p-4 bg-red-800/50 border-2 border-red-500 rounded-xl shadow-lg animate-pulse">
             <h2 className="text-xl font-bold text-white text-center mb-2">URGENT ALERT RECEIVED</h2>
             <button

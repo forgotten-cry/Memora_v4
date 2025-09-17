@@ -1,3 +1,4 @@
+import ReminderNotification from './ReminderNotification';
 import React, { useState, useEffect } from 'react';
 import PatientHome from './PatientHome';
 import ARNavigation from './ARNavigation';
@@ -75,7 +76,12 @@ const PatientView: React.FC = () => {
     }
   };
 
-  return <div className="w-full h-full">{renderScreen()}</div>;
+  return (
+    <div className="w-full h-full">
+      <ReminderNotification />
+      {renderScreen()}
+    </div>
+  );
 };
 
 export default PatientView;

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { Reminder, Alert, AppAction, Memory, EventLogItem, SharedQuote, VoiceMessage, SenderRole } from '../types';
-import { VOICE_MESSAGE_LEO_URL, VOICE_MESSAGE_SAM_URL } from '../assets/audioData';
+// Use public audio files for sample voice messages (avoid embedding Base64 in source)
+const VOICE_MESSAGE_LEO_URL = '/audio/voice_leo.mp3';
+const VOICE_MESSAGE_SAM_URL = '/audio/voice_sam.mp3';
 
 interface AppState {
   reminders: Reminder[];
@@ -37,7 +39,7 @@ const initialState: AppState = {
   voiceMessages: [
       { 
           id: 'vm1', 
-          audioUrl: VOICE_MESSAGE_LEO_URL,
+      audioUrl: VOICE_MESSAGE_LEO_URL,
           duration: 1,
           senderRole: SenderRole.FAMILY, 
           senderName: 'Your Grandson, Leo',
@@ -45,7 +47,7 @@ const initialState: AppState = {
       },
        { 
           id: 'vm2', 
-          audioUrl: VOICE_MESSAGE_SAM_URL,
+       audioUrl: VOICE_MESSAGE_SAM_URL,
           duration: 1,
           senderRole: SenderRole.CAREGIVER, 
           senderName: 'Your Caregiver, Sam',

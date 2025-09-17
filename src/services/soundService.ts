@@ -1,9 +1,33 @@
 // A simple service to manage audio playback for alerts.
-import { SOS_ALERT_URL, REMINDER_ALERT_URL } from '../assets/audioData';
+
+// Import audio assets so the bundler (Vite) includes them in the app package.
+import sosAsset from '../assets/audio/sos_alert.mp3';
+import fallAsset from '../assets/audio/fall_alert.mp3';
+import reminderAsset from '../assets/audio/reminder_notification.mp3';
 
 let sosAudio: HTMLAudioElement | null = null;
+let fallAudio: HTMLAudioElement | null = null;
 let reminderAudio: HTMLAudioElement | null = null;
 let isUnlocked = false;
+
+function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement {
+  if (kind === 'sos') {
+    if (sosAudio) return sosAudio;
+    sosAudio = new Audio(sosAsset);
+    sosAudio.loop = true;
+    return sosAudio;
+  }
+  if (kind === 'fall') {
+    if (fallAudio) return fallAudio;
+    fallAudio = new Audio(fallAsset);
+    fallAudio.loop = true;
+    return fallAudio;
+  }
+  if (reminderAudio) return reminderAudio;
+  reminderAudio = new Audio(reminderAsset);
+  reminderAudio.loop = false;
+  return reminderAudio;
+}
 
 const soundService = {
   /**
@@ -12,72 +36,79 @@ const soundService = {
    */
   unlock: () => {
     if (isUnlocked) return;
-    
-    console.log('Attempting to unlock audio context...');
-
-    if (!sosAudio) {
-      sosAudio = new Audio(SOS_ALERT_URL);
-      sosAudio.loop = true;
-    }
-    if (!reminderAudio) {
-      reminderAudio = new Audio(REMINDER_ALERT_URL);
-      reminderAudio.loop = false;
-    }
-
-    // A common technique: play a muted sound to unlock the audio context.
-    sosAudio.muted = true;
-    const promise = sosAudio.play();
-
-    if (promise) {
-      promise.then(() => {
-        // Once playback starts, we can pause it and unmute for future use.
-        sosAudio?.pause();
-        sosAudio.currentTime = 0;
-        sosAudio.muted = false;
-        isUnlocked = true;
-        console.log('Audio context unlocked successfully.');
-      }).catch(err => {
-        // If it fails, we log the error but don't set isUnlocked,
-        // allowing another user interaction to potentially try again.
-        console.error('Audio unlock failed. Subsequent sounds may not play until another interaction.', err);
-      });
+    try {
+      console.log('Attempting to unlock audio context...');
+      const audio = ensureAudioElement('sos');
+      audio.muted = true;
+      const promise = audio.play();
+      if (promise) {
+        promise.then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.muted = false;
+          isUnlocked = true;
+          console.log('Audio context unlocked successfully.');
+        }).catch(err => {
+          console.error('Audio unlock failed. Subsequent sounds may not play until another interaction.', err);
+        });
+      }
+    } catch (err) {
+      console.error('Audio unlock failed synchronously', err);
     }
   },
 
-  /**
-   * Plays the looping SOS/Fall alert sound.
-   */
   playSosAlert: () => {
-    if (!sosAudio) {
-      sosAudio = new Audio(SOS_ALERT_URL);
-      sosAudio.loop = true;
-    }
-    // Check if it's already playing to avoid interrupting and restarting it
-    if (sosAudio.paused) {
-      sosAudio.play().catch(e => console.error("Error playing SOS sound:", e));
-    }
-  },
-  
-  /**
-   * Stops the looping SOS/Fall alert sound and rewinds it.
-   */
-  stopSosAlert: () => {
-    if (sosAudio && !sosAudio.paused) {
-      sosAudio.pause();
-      sosAudio.currentTime = 0; // Rewind to the start
+    try {
+      const audio = ensureAudioElement('sos');
+      if (audio.paused) audio.play().catch(e => console.error('Error playing SOS sound:', e));
+    } catch (e) {
+      console.error('Error ensuring SOS audio element:', e);
     }
   },
 
-  /**
-   * Plays the one-time reminder notification sound.
-   */
-  playReminderAlert: () => {
-    if (!reminderAudio) {
-      reminderAudio = new Audio(REMINDER_ALERT_URL);
-      reminderAudio.loop = false;
+  stopSosAlert: () => {
+    if (sosAudio) {
+      try {
+        if (!sosAudio.paused) {
+          sosAudio.pause();
+          sosAudio.currentTime = 0;
+        }
+      } catch (e) {
+        console.error('Error stopping SOS audio', e);
+      }
     }
-    reminderAudio.currentTime = 0; // Rewind in case it's triggered again
-    reminderAudio.play().catch(e => console.error("Error playing reminder sound:", e));
+  },
+
+  playFallAlert: () => {
+    try {
+      const audio = ensureAudioElement('fall');
+      if (audio.paused) audio.play().catch(e => console.error('Error playing Fall alert sound:', e));
+    } catch (e) {
+      console.error('Error ensuring Fall audio element:', e);
+    }
+  },
+
+  stopFallAlert: () => {
+    if (fallAudio) {
+      try {
+        if (!fallAudio.paused) {
+          fallAudio.pause();
+          fallAudio.currentTime = 0;
+        }
+      } catch (e) {
+        console.error('Error stopping Fall audio', e);
+      }
+    }
+  },
+
+  playReminderAlert: () => {
+    try {
+      const audio = ensureAudioElement('reminder');
+      audio.currentTime = 0;
+      audio.play().catch(e => console.error('Error playing reminder sound:', e));
+    } catch (e) {
+      console.error('Error ensuring Reminder audio element:', e);
+    }
   }
 };
 
