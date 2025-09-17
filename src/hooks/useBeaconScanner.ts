@@ -37,7 +37,6 @@ export const useBeaconScanner = () => {
     const [beacons, setBeacons] = useState<Beacon[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // fix: `useRef` was not imported.
     const scanControllerRef = useRef<any>(null);
 
     const handleAdvertisement = (event: any) => {
@@ -91,7 +90,6 @@ export const useBeaconScanner = () => {
             scanControllerRef.current = scan;
             
             console.log("Scan started. Listening for advertisements...");
-            // fix: The type definition for the experimental `navigator.bluetooth` API is incomplete. Cast to `any` to allow adding an event listener.
             (navigator.bluetooth as any).addEventListener('advertisementreceived', handleAdvertisement);
 
         } catch (err) {
@@ -112,7 +110,6 @@ export const useBeaconScanner = () => {
             console.log("BLE scan stopped.");
         }
         setIsScanning(false);
-        // fix: The type definition for the experimental `navigator.bluetooth` API is incomplete. Cast to `any` to allow removing an event listener.
         if (navigator.bluetooth) {
             (navigator.bluetooth as any).removeEventListener('advertisementreceived', handleAdvertisement);
         }

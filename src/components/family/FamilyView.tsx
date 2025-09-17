@@ -14,7 +14,6 @@ import VoiceRecorder from '../shared/VoiceRecorder';
 import soundService from '../../services/soundService';
 import MusicIcon from '../icons/MusicIcon';
 
-// fix: Add 'music' to the supported icon types to match the Reminder type.
 const ReminderIcon: React.FC<{ icon: 'medication' | 'meal' | 'hydration' | 'music'; className?: string }> = ({ icon, className }) => {
     switch (icon) {
         case 'medication': return <PillIcon className={className} />;
