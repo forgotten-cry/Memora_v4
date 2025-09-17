@@ -203,6 +203,9 @@ const App: React.FC = () => {
 
       {/* Show acknowledge modal for the first critical alert that requires acknowledgment */}
       {state.alerts.length > 0 && !showAckForAlertId && (() => {
+        const role = state.currentUser?.role?.toUpperCase?.();
+        const canSeeAck = state.devMode || role === 'CAREGIVER' || role === 'FAMILY';
+        if (!canSeeAck) return null;
         const critical = state.alerts.find(a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement);
         if (critical) {
           setShowAckForAlertId(critical.id);

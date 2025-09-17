@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
+import localNotifications from '../../services/localNotifications';
 import { Reminder } from '../../types';
 import PillIcon from '../icons/PillIcon';
 import ForkKnifeIcon from '../icons/ForkKnifeIcon';
@@ -29,6 +30,19 @@ const ReminderForm: React.FC = () => {
         };
 
         dispatch({ type: 'ADD_REMINDER', payload: newReminder });
+        // Schedule native/web notification for the reminder (best-effort)
+        try {
+            const [hoursStr, minutesStr] = time.split(':');
+            const now = new Date();
+            const scheduleAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hoursStr, 10), parseInt(minutesStr, 10));
+            // If schedule time is in the past for today, schedule for tomorrow
+            if (scheduleAt.getTime() <= Date.now()) {
+                scheduleAt.setDate(scheduleAt.getDate() + 1);
+            }
+            localNotifications.schedule({ id: Date.now(), title: newReminder.title, body: `Reminder: ${newReminder.title}`, scheduleAt });
+        } catch (e) {
+            console.warn('Failed to schedule local notification for reminder', e);
+        }
         setTitle('');
         setTime('');
         setIcon('medication');

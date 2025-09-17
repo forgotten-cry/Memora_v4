@@ -105,3 +105,60 @@ ngrok http 3000
 5. Verify real-time actions propagate between devices (e.g., create a reminder or trigger SOS).
 
 If you want, I can add an optional small script in `demo-server/` which prints the ngrok forwarding URL directly into the server logs by calling the ngrok API (requires ngrok authtoken and npm package) — tell me if you'd like that.
+
+## Using the provided ngrok helper (`demo-server/print-ngrok.js`)
+
+I added a lightweight helper script `demo-server/print-ngrok.js` that queries the local ngrok agent's API (at `http://127.0.0.1:4040/api/tunnels`) and prints active tunnels. This is helpful to quickly copy the public forwarding URL into the app without opening ngrok's web UI.
+
+Typical terminal workflow (recommended):
+
+1. Open Terminal A — start the demo server:
+
+```bash
+cd demo-server
+npm install   # first-time only
+npm start     # runs server.js (listens on port 8081)
+```
+
+2. Open Terminal B — start ngrok and keep it running:
+
+```bash
+ngrok http 8081
+```
+
+3. Open Terminal C (or reuse A/B) — run the helper to print active tunnels:
+
+```bash
+# from the repo root
+cd demo-server
+npm run print-ngrok
+```
+
+The helper will attempt to read `http://127.0.0.1:4040/api/tunnels` and print any `https://` forwarding URLs. If it prints "No active ngrok tunnels found", make sure ngrok is running in Terminal B.
+
+Notes:
+- The helper does not start ngrok for you — it only reads the local ngrok API. Starting ngrok in Terminal B is a separate step.
+- You can run the helper in the same terminal where ngrok is running, but you will usually want to keep ngrok running in its own terminal so the tunnel remains active.
+- If you prefer a single-terminal flow, start the server in the background (e.g., `npm start &`) and then start ngrok, but I recommend separate terminals for clarity and stability.
+
+Example minimal sequence (single-machine demo):
+
+Terminal A:
+```bash
+cd demo-server
+npm start
+```
+
+Terminal B:
+```bash
+ngrok http 8081
+```
+
+Terminal C (optional helper output):
+```bash
+cd demo-server
+npm run print-ngrok
+# copy the printed https://xxxx.ngrok.io and set the demo URL in the app
+```
+
+If you'd like, I can extend the helper to automatically set `window.__DEMO_REALTIME_URL` in the web app by serving a tiny endpoint (requires adding a static script or changing your index.html), or even to attempt to start ngrok automatically (requires your ngrok authtoken and embedding the ngrok npm client). Tell me which option you'd like and I'll implement it.
