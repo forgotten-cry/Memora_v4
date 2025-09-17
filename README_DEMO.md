@@ -77,3 +77,31 @@ window.__DEMO_REALTIME_URL = 'wss://abcd-1234.ngrok.io';
 - `demo-server/README.md` — quick reference included in the demo-server folder
 
 If you'd like, I can add a small helper script to automatically print the ngrok URL into the app (via a tiny HTTP endpoint) to make connecting devices easier during demos.
+
+## Detailed tips for reliable ngrok demos
+
+- Use the `--host-header` option if your demo server depends on Host: headers. For example:
+
+```bash
+ngrok http 8081 --host-header=localhost:8081
+```
+
+- If your local server is listening on a different port (e.g., 3000), start ngrok for that port:
+
+```bash
+ngrok http 3000
+```
+
+- Always copy the `https://` URL from ngrok's output (not the `http://`) and replace `https://` with `wss://` when using WebSocket secure connections.
+
+- On mobile devices behind strict corporate networks or captive portals, ngrok may still fail. Use devices on a mobile hotspot for the most reliable demo.
+
+## Quick checklist for multi-device demos
+
+1. Start the demo server locally and verify `/health` responds.
+2. Start `ngrok http 8081` and copy the `https://` forwarding URL.
+3. Set `window.__DEMO_REALTIME_URL = 'wss://xxxx.ngrok.io'` in each device's browser console or the app Demo Login field.
+4. Connect each device with a distinct role (Patient / Caregiver / Family) using the DemoLogin UI.
+5. Verify real-time actions propagate between devices (e.g., create a reminder or trigger SOS).
+
+If you want, I can add an optional small script in `demo-server/` which prints the ngrok forwarding URL directly into the server logs by calling the ngrok API (requires ngrok authtoken and npm package) — tell me if you'd like that.

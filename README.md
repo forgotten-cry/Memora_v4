@@ -198,5 +198,40 @@ Once the project is open and has finished its initial sync/build (this can take 
 
 1.  In the Android Studio top menu, go to **Build** -> **Build Bundle(s) / APK(s)** -> **Build APK(s)**.
 2.  Android Studio will start building. Once it's finished, a small notification will pop up in the bottom-right corner.
+
+### Additional native configuration (recommended)
+
+After you add the platforms and sync, you should manually add privacy strings and permissions into the native projects. The JS/TS code may attempt to call Capacitor `Permissions` or `LocalNotifications`, but the native platforms still require the proper manifest/Info.plist entries.
+
+- iOS (`ios/App/App/Info.plist`) — add these keys with descriptive messages:
+    - `NSCameraUsageDescription`
+    - `NSMicrophoneUsageDescription`
+    - `NSMotionUsageDescription` (for fall detection / step counting)
+    - `NSBluetoothAlwaysUsageDescription` and/or `NSBluetoothPeripheralUsageDescription` (if you enable BLE)
+
+- Android (`android/app/src/main/AndroidManifest.xml`) — example entries for Android 12+ (add as needed):
+    - `<uses-permission android:name="android.permission.CAMERA" />`
+    - `<uses-permission android:name="android.permission.RECORD_AUDIO" />`
+    - `<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />`
+    - `<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />`
+    - `<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />`
+    - `<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />`
+
+These entries are required for runtime permission flows on Android and for iOS privacy disclosures. Make sure to test on device after adding them.
+
+### Capacitor Local Notifications
+
+If you want reliable reminders and alarms while the app is running in the background on native devices, install and configure Capacitor Local Notifications:
+
+1. Install the plugin in your web project:
+
+```bash
+npm install @capacitor/local-notifications
+npx cap sync
+```
+
+2. Open the native project in Android Studio / Xcode and ensure the plugin is present. Add any platform-specific notification channel setup on Android, and ensure you add any required Info.plist keys on iOS.
+
+3. The app contains a JS wrapper at `src/services/localNotifications.ts` which will attempt to use the plugin at runtime. Use `localNotifications.requestPermission()` to prompt the user and `localNotifications.schedule({...})` to schedule reminders.
 3.  Click the **"locate"** link in the notification to open the folder containing your brand new APK file. It's usually found in `android/app/build/outputs/apk/debug/app-debug.apk`.
 4.  You can now transfer this `app-debug.apk` file to your Android phone and install it.

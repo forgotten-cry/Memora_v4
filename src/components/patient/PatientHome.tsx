@@ -58,9 +58,12 @@ const PatientHome: React.FC<PatientHomeProps> = ({ setScreen }) => {
        <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-slate-700"></div>
        <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-slate-700"></div>
        
-      <header className="text-left mb-6 border-b border-slate-700/50 pb-4">
-        <h1 className="text-3xl font-bold text-white">Memora</h1>
-        <p className="text-md text-slate-400 mt-1">Hello! How can I help you today?</p>
+      <header className="flex items-center justify-start gap-4 text-left mb-6 border-b border-slate-700/50 pb-4">
+        <button onClick={() => (window as any).openLoginModal?.()} className="px-3 py-1 bg-slate-800/80 rounded text-sm">Login</button>
+        <div>
+          <h1 className="text-3xl font-bold text-white">Memora</h1>
+          <p className="text-md text-slate-400 mt-1">Hello! How can I help you today?</p>
+        </div>
       </header>
       
       {sharedQuote && (

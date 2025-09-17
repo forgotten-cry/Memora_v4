@@ -5,6 +5,7 @@ import FamilyView from './components/family/FamilyView';
 import { ViewMode } from './types';
 import { useAppContext } from './context/AppContext';
 import soundService from './services/soundService';
+import localNotifications from './services/localNotifications';
 import DemoLogin from './components/shared/DemoLogin';
 import LoginPage from './components/shared/LoginPage';
 import AcknowledgeModal from './components/shared/AcknowledgeModal';
@@ -13,6 +14,11 @@ const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
   // Use global currentView from app state so login can control the dashboard
   const viewMode = state.currentView || ViewMode.PATIENT;
+
+  const realtimeDotClass = (user: any) => {
+    if (state.devMode) return 'bg-yellow-400';
+    return user ? 'bg-green-400' : 'bg-red-500';
+  };
 
   // Effect to unlock audio on the first user interaction
   useEffect(() => {
@@ -31,6 +37,88 @@ const App: React.FC = () => {
       document.removeEventListener('touchstart', unlockAudioPlayback);
     };
   }, []);
+
+  // Expose a global helper so PatientHome can open the login modal without prop drilling
+  useEffect(() => {
+    (window as any).openLoginModal = () => setShowLogin(true);
+    return () => { (window as any).openLoginModal = undefined; };
+  }, []);
+
+  // Centralized alert sound control: only play alerts for caregiver/family or when in devMode.
+  useEffect(() => {
+    const unack = state.alerts.filter(a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement);
+    const role = state.currentUser?.role?.toUpperCase?.();
+    const canHear = state.devMode || role === 'CAREGIVER' || role === 'FAMILY';
+
+    if (!canHear) {
+      soundService.stopSosAlert();
+      soundService.stopFallAlert();
+      return;
+    }
+
+    if (unack.length > 0) {
+      if (unack.some(a => a.type === 'SOS')) {
+        soundService.stopFallAlert();
+        soundService.playSosAlert();
+      } else if (unack.some(a => a.type === 'FALL')) {
+        soundService.stopSosAlert();
+        soundService.playFallAlert();
+      }
+    } else {
+      soundService.stopSosAlert();
+      soundService.stopFallAlert();
+    }
+
+    return () => {
+      soundService.stopSosAlert();
+      soundService.stopFallAlert();
+    };
+  }, [state.alerts, state.currentUser, state.devMode]);
+
+  // Request native permissions (microphone/camera) when a user logs in on native platforms
+  useEffect(() => {
+    const tryRequestNativePermissions = async () => {
+      try {
+        const Cap = (window as any).Capacitor;
+        if (Cap && typeof Cap.isNativePlatform === 'function' && Cap.isNativePlatform()) {
+          // dynamic import to avoid bundler issues on web
+          const core = await import('@capacitor/core');
+          const coreAny: any = core;
+          try {
+            if (coreAny.Permissions && typeof coreAny.Permissions.request === 'function') {
+              await coreAny.Permissions.request({ name: 'camera' as any });
+            }
+          } catch (e) {
+            console.warn('Camera permission request failed', e);
+          }
+          try {
+            if (coreAny.Permissions && typeof coreAny.Permissions.request === 'function') {
+              await coreAny.Permissions.request({ name: 'microphone' as any });
+            }
+          } catch (e) {
+            console.warn('Microphone permission request failed', e);
+          }
+        }
+      } catch (e) {
+        // Not a native environment or permissions plugin missing — ignore.
+        // On web, components already request permissions when needed.
+      }
+    };
+
+    if (state.currentUser) {
+      // Request permissions for camera/microphone (existing) and additional
+      // best-effort requests for bluetooth, motion/activity, and notifications.
+      tryRequestNativePermissions();
+      // Request notification permission (web) and Local Notifications on native
+      (async () => {
+        try {
+          await localNotifications.requestPermission();
+        } catch (e) {
+          console.warn('Notification permission request failed', e);
+        }
+      })();
+    }
+  }, [state.currentUser]);
 
 
   // Effect for checking reminders
@@ -100,21 +188,14 @@ const App: React.FC = () => {
     // The main background is now on the body tag in index.html
     <div className="min-h-screen font-sans antialiased text-gray-300"> 
       <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
-        <button onClick={() => setShowLogin(true)} className="px-3 py-1 bg-slate-800/80 rounded">Login</button>
-        <div className="text-right">
-          {state.currentUser ? (
-            <div className="text-xs text-slate-300">{state.currentUser.username}</div>
-          ) : (
-            <div className="text-xs text-slate-500">Not connected</div>
-          )}
-          {state.devMode && <div className="text-xxs text-yellow-300">Dev Mode</div>}
-        </div>
+        {/* Connection status dot */}
+        <div className={`w-3 h-3 rounded-full ${realtimeDotClass(state.currentUser)} ${state.devMode ? 'ring-2 ring-yellow-400' : ''}`} title={state.currentUser ? 'Connected' : 'Not connected'} />
         {canShowMasterSwitch && (
           <button
             onClick={handleSwitchView}
-            className="px-4 py-2 bg-slate-800/80 border border-slate-700 backdrop-blur-sm text-sm text-gray-300 rounded-full shadow-lg hover:bg-slate-700/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="px-3 py-1 bg-slate-800/80 border border-slate-700 text-xs text-gray-300 rounded-full shadow-sm hover:bg-slate-700/90 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-slate-500"
           >
-            Switch to {getNextViewName()} View
+            {getNextViewName()}
           </button>
         )}
       </div>

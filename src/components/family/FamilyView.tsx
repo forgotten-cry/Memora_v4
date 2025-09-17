@@ -56,26 +56,7 @@ const FamilyView: React.FC = () => {
         a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement
     );
 
-    useEffect(() => {
-        if (unacknowledgedAlerts.length > 0) {
-            // Prefer SOS if both present, else FALL
-            if (unacknowledgedAlerts.some(a => a.type === 'SOS')) {
-                soundService.stopFallAlert();
-                soundService.playSosAlert();
-            } else if (unacknowledgedAlerts.some(a => a.type === 'FALL')) {
-                soundService.stopSosAlert();
-                soundService.playFallAlert();
-            }
-        } else {
-            soundService.stopSosAlert();
-            soundService.stopFallAlert();
-        }
-        // Cleanup sound on component unmount
-        return () => {
-            soundService.stopSosAlert();
-            soundService.stopFallAlert();
-        };
-    }, [unacknowledgedAlerts.length]);
+    // Alert sound playback is handled centrally in App.tsx so that only caregivers/family/dev hear it.
 
     const handleAcknowledge = () => {
         dispatch({ type: 'ACKNOWLEDGE_ALERTS' });

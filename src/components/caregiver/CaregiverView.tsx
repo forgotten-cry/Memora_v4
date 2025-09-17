@@ -50,18 +50,7 @@ const CaregiverView: React.FC = () => {
     a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement
   );
 
-  useEffect(() => {
-    if (unacknowledgedAlerts.length > 0) {
-      soundService.playSosAlert();
-    } else {
-      soundService.stopSosAlert();
-    }
-    
-    // Cleanup sound on component unmount
-    return () => {
-      soundService.stopSosAlert();
-    };
-  }, [unacknowledgedAlerts.length]);
+  // Alert sound playback is handled centrally in App.tsx so that only caregivers/family/dev hear it.
 
 
   const deleteReminder = (id: string) => {
