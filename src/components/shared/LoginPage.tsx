@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import realtimeService from '../../services/realtimeService';
 import { useAppContext } from '../../context/AppContext';
 
@@ -26,19 +26,68 @@ const LoginPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
     if (onClose) onClose();
   };
 
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const lastActiveElement = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Save last focused element to restore focus on close
+    lastActiveElement.current = document.activeElement as HTMLElement | null;
+    // Focus the first input in the modal
+    setTimeout(() => firstInputRef.current?.focus(), 0);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      }
+      if (e.key === 'Tab' && modalRef.current) {
+        // Simple focus trap
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          (first as HTMLElement).focus();
+        }
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          (last as HTMLElement).focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // restore focus
+      lastActiveElement.current?.focus?.();
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-60">
-      <div className="absolute inset-0 bg-black/60" onClick={close}></div>
-      <div className="relative bg-slate-900 rounded-xl shadow-2xl w-full max-w-md p-6 z-70 border border-slate-700">
-        <button onClick={close} className="absolute top-3 right-3 text-slate-400 hover:text-white">X</button>
+    <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 99999 }} aria-hidden={false}>
+      <div className="absolute inset-0 bg-black/60" onClick={close} style={{ zIndex: 99998 }} />
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-modal-title"
+        className="relative bg-slate-900 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-700"
+        style={{ zIndex: 99999 }}
+      >
+        <button onClick={close} className="absolute top-3 right-3 text-slate-400 hover:text-white" aria-label="Close login dialog">X</button>
         <h2 className="text-lg font-bold mb-4">Demo Login</h2>
-        <label className="block text-sm text-slate-300">User</label>
-        <input className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={username} onChange={e => setUsername(e.target.value)} />
+  <label className="block text-sm text-slate-300">User</label>
+  <input ref={firstInputRef} className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={username} onChange={e => setUsername(e.target.value)} />
         <label className="block text-sm text-slate-300">Password</label>
         <input type="password" className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={password} onChange={e => setPassword(e.target.value)} />
 
-        <label className="block text-sm text-slate-300">WSS URL</label>
-        <input className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={wssUrl} onChange={e => setWssUrl(e.target.value)} />
+  <label className="block text-sm text-slate-300">WSS URL</label>
+  <input className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={wssUrl} onChange={e => setWssUrl(e.target.value)} />
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
