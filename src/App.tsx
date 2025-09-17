@@ -50,10 +50,11 @@ const App: React.FC = () => {
     // Determine effective role: prefer logged-in user's role, otherwise fall back
     // to the global view mode (master-switch) so developers can test caregiver/family flows
     // without logging in. We still never allow a PATIENT to be elevated by devMode.
-    const loggedRole = state.currentUser?.role?.toUpperCase?.();
-    const viewRole = state.currentView === 'CAREGIVER' ? 'CAREGIVER' : state.currentView === 'FAMILY' ? 'FAMILY' : 'PATIENT';
-    const effectiveRole = loggedRole || viewRole;
+  const loggedRole = state.currentUser?.role?.toUpperCase?.();
+  const viewRole = state.currentView === 'CAREGIVER' ? 'CAREGIVER' : state.currentView === 'FAMILY' ? 'FAMILY' : 'PATIENT';
+  const effectiveRole = loggedRole || viewRole;
   const canHear = (effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY') || (state.devMode && (effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY'));
+  console.debug('[App] alert-effect', { effectiveRole, canHear, devMode: state.devMode, unackCount: unack.length, alerts: unack.map(a => ({ id: a.id, type: a.type })) });
 
     if (!canHear) {
       soundService.stopSosAlert();

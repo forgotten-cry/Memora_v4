@@ -15,17 +15,35 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
     if (sosAudio) return sosAudio;
     sosAudio = new Audio(sosAsset);
     sosAudio.loop = true;
+    sosAudio.preload = 'auto';
+    // playsInline to avoid Safari going fullscreen on iOS
+    (sosAudio as any).playsInline = true;
+    try { sosAudio.load(); } catch (e) { /* ignore */ }
+    sosAudio.addEventListener('play', () => console.debug('[soundService] sosAudio play event')); 
+    sosAudio.addEventListener('pause', () => console.debug('[soundService] sosAudio pause event'));
+    sosAudio.addEventListener('error', (ev) => console.error('[soundService] sosAudio error', ev));
     return sosAudio;
   }
   if (kind === 'fall') {
     if (fallAudio) return fallAudio;
     fallAudio = new Audio(fallAsset);
     fallAudio.loop = true;
+    fallAudio.preload = 'auto';
+    (fallAudio as any).playsInline = true;
+    try { fallAudio.load(); } catch (e) { /* ignore */ }
+    fallAudio.addEventListener('play', () => console.debug('[soundService] fallAudio play event'));
+    fallAudio.addEventListener('pause', () => console.debug('[soundService] fallAudio pause event'));
+    fallAudio.addEventListener('error', (ev) => console.error('[soundService] fallAudio error', ev));
     return fallAudio;
   }
   if (reminderAudio) return reminderAudio;
   reminderAudio = new Audio(reminderAsset);
   reminderAudio.loop = false;
+  reminderAudio.preload = 'auto';
+  (reminderAudio as any).playsInline = true;
+  try { reminderAudio.load(); } catch (e) { /* ignore */ }
+  reminderAudio.addEventListener('play', () => console.debug('[soundService] reminderAudio play event'));
+  reminderAudio.addEventListener('error', (ev) => console.error('[soundService] reminderAudio error', ev));
   return reminderAudio;
 }
 
