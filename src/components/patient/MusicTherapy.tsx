@@ -12,22 +12,22 @@ const playlist = [
   {
     title: 'Relaxing Piano',
     artist: 'Ashot Danielyan',
-    // Source: https://pixabay.com/music/beautiful-plays-relaxing-piano-music-11648/
-    audioSrc: 'https://cdn.pixabay.com/audio/2022/03/10/audio_2857fb7128.mp3',
+    // Source: Royalty-free music from Internet Archive
+    audioSrc: 'https://archive.org/download/ashot-danielyan-composition-relaxing-piano-music/relaxing-piano-music.mp3',
     albumArtSrc: 'https://images.unsplash.com/photo-1597813594218-cde4a4843918?q=80&w=800&auto=format&fit=crop',
   },
   {
     title: 'Ambient Classical Guitar',
     artist: 'William King',
-    // Source: https://pixabay.com/music/acoustic-group-ambient-classical-guitar-144998/
-    audioSrc: 'https://cdn.pixabay.com/audio/2023/04/21/audio_41a182962a.mp3',
+    // Source: Royalty-free music from Internet Archive
+    audioSrc: 'https://archive.org/download/ambient-classical-guitar/ambient-classical-guitar.mp3',
     albumArtSrc: 'https://images.unsplash.com/photo-1510915361894-db8b60106945?q=80&w=800&auto=format&fit=crop',
   },
   {
     title: 'Forest Lullaby',
     artist: 'Lesfm',
-     // Source: https://pixabay.com/music/lullaby-forest-lullaby-110624/
-    audioSrc: 'https://cdn.pixabay.com/audio/2022/05/27/audio_104fa7bf7e.mp3',
+     // Source: Royalty-free music from Internet Archive
+    audioSrc: 'https://archive.org/download/lesfm-forest-lullaby/lesfm-forest-lullaby.mp3',
     albumArtSrc: 'https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop',
   }
 ];
