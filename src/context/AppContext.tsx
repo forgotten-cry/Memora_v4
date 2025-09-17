@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useRef } from 'react';
 import realtimeService from '../services/realtimeService';
 import { Reminder, Alert, AppActionAll, Memory, EventLogItem, SharedQuote, VoiceMessage, SenderRole, CurrentUser, ViewMode } from '../types';
-// Use public audio files for sample voice messages (avoid embedding Base64 in source)
-const VOICE_MESSAGE_LEO_URL = '/audio/voice_leo.mp3';
-const VOICE_MESSAGE_SAM_URL = '/audio/voice_sam.mp3';
+// Import bundled voice message samples so deploys (e.g., Vercel) include them and avoid 404s
+import voiceLeo from '../assets/audio/voice_leo.mp3';
+import voiceSam from '../assets/audio/voice_sam.mp3';
+const VOICE_MESSAGE_LEO_URL = voiceLeo;
+const VOICE_MESSAGE_SAM_URL = voiceSam;
 
 interface AppState {
   reminders: Reminder[];

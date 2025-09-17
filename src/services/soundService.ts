@@ -60,6 +60,11 @@ const soundService = {
   playSosAlert: () => {
     try {
       const audio = ensureAudioElement('sos');
+      console.debug('[soundService] playSosAlert -> src=', audio.src);
+      audio.muted = false;
+      audio.volume = 1.0;
+      // Ensure we start from the beginning for loudness
+      audio.currentTime = 0;
       if (audio.paused) audio.play().catch(e => console.error('Error playing SOS sound:', e));
     } catch (e) {
       console.error('Error ensuring SOS audio element:', e);
@@ -82,6 +87,10 @@ const soundService = {
   playFallAlert: () => {
     try {
       const audio = ensureAudioElement('fall');
+      console.debug('[soundService] playFallAlert -> src=', audio.src);
+      audio.muted = false;
+      audio.volume = 1.0;
+      audio.currentTime = 0;
       if (audio.paused) audio.play().catch(e => console.error('Error playing Fall alert sound:', e));
     } catch (e) {
       console.error('Error ensuring Fall audio element:', e);
