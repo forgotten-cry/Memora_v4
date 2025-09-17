@@ -9,6 +9,8 @@ let sosAudio: HTMLAudioElement | null = null;
 let fallAudio: HTMLAudioElement | null = null;
 let reminderAudio: HTMLAudioElement | null = null;
 let isUnlocked = false;
+let _isSosPlaying = false;
+let _isFallPlaying = false;
 
 function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement {
   if (kind === 'sos') {
@@ -83,7 +85,7 @@ const soundService = {
       audio.volume = 1.0;
       // Ensure we start from the beginning for loudness
       audio.currentTime = 0;
-      if (audio.paused) audio.play().catch(e => console.error('Error playing SOS sound:', e));
+      if (audio.paused) audio.play().then(() => { _isSosPlaying = true; }).catch(e => console.error('Error playing SOS sound:', e));
     } catch (e) {
       console.error('Error ensuring SOS audio element:', e);
     }
@@ -96,6 +98,7 @@ const soundService = {
           sosAudio.pause();
           sosAudio.currentTime = 0;
         }
+        _isSosPlaying = false;
       } catch (e) {
         console.error('Error stopping SOS audio', e);
       }
@@ -109,7 +112,7 @@ const soundService = {
       audio.muted = false;
       audio.volume = 1.0;
       audio.currentTime = 0;
-      if (audio.paused) audio.play().catch(e => console.error('Error playing Fall alert sound:', e));
+      if (audio.paused) audio.play().then(() => { _isFallPlaying = true; }).catch(e => console.error('Error playing Fall alert sound:', e));
     } catch (e) {
       console.error('Error ensuring Fall audio element:', e);
     }
@@ -122,11 +125,16 @@ const soundService = {
           fallAudio.pause();
           fallAudio.currentTime = 0;
         }
+        _isFallPlaying = false;
       } catch (e) {
         console.error('Error stopping Fall audio', e);
       }
     }
   },
+
+  // Diagnostics
+  isSosPlaying: () => !!_isSosPlaying,
+  isFallPlaying: () => !!_isFallPlaying,
 
   playReminderAlert: () => {
     try {

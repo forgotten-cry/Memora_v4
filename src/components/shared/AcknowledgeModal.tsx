@@ -12,6 +12,17 @@ const AcknowledgeModal: React.FC<{ alertId: string; alertType: 'SOS' | 'FALL'; o
     setTimeout(() => {
       modalRef.current?.querySelector<HTMLElement>('button')?.focus();
     }, 0);
+    // When the modal mounts, ensure the correct alert audio is playing and attached
+    if (alertType === 'SOS') {
+      if (!soundService.isSosPlaying()) {
+        soundService.playSosAlert();
+      }
+    }
+    if (alertType === 'FALL') {
+      if (!soundService.isFallPlaying()) {
+        soundService.playFallAlert();
+      }
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
