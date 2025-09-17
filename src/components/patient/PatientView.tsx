@@ -7,7 +7,6 @@ import RemindersList from './RemindersList';
 import CognitiveGames from './CognitiveGames';
 import MemoryAlbumView from './MemoryAlbumView';
 import VoiceMessages from './VoiceMessages';
-import MusicTherapy from './MusicTherapy';
 import { PatientScreen } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 
@@ -69,8 +68,6 @@ const PatientView: React.FC = () => {
         return <MemoryAlbumView onBack={() => setScreen(PatientScreen.HOME)} />;
       case PatientScreen.VOICE_MESSAGES:
         return <VoiceMessages onBack={() => setScreen(PatientScreen.HOME)} />;
-      case PatientScreen.MUSIC_THERAPY:
-        return <MusicTherapy onBack={() => setScreen(PatientScreen.HOME)} />;
       default:
         return <PatientHome setScreen={setScreen} />;
     }
