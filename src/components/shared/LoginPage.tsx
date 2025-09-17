@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ViewMode } from '../../types';
 import realtimeService from '../../services/realtimeService';
 import { useAppContext } from '../../context/AppContext';
 
@@ -90,9 +91,19 @@ const LoginPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   <input className="w-full p-2 mb-3 rounded bg-slate-800 border border-slate-700" value={wssUrl} onChange={e => setWssUrl(e.target.value)} />
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <input id="devmode" type="checkbox" checked={devMode} onChange={() => setDevMode(!devMode)} />
-            <label htmlFor="devmode" className="text-sm text-slate-300">Dev Mode</label>
+          <div>
+            <button
+              onClick={() => {
+                // Enable dev mode and auto-login as patient, then close
+                dispatch({ type: 'SET_DEV_MODE', payload: true });
+                dispatch({ type: 'LOGIN_SUCCESS', payload: { username: 'dev', role: 'PATIENT' } });
+                dispatch({ type: 'SET_VIEW_MODE', payload: ViewMode.PATIENT });
+                if (onClose) onClose();
+              }}
+              className="px-3 py-1 bg-yellow-600 rounded text-sm"
+            >
+              Dev Mode
+            </button>
           </div>
           <div>
             <button onClick={connect} className="px-4 py-2 bg-slate-700 rounded">Connect</button>
