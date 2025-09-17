@@ -38,7 +38,7 @@ const initialState: AppState = {
       { 
           id: 'vm1', 
           audioUrl: VOICE_MESSAGE_LEO_URL,
-          duration: 4,
+          duration: 2,
           senderRole: SenderRole.FAMILY, 
           senderName: 'Your Grandson, Leo',
           timestamp: '10:30 AM'
@@ -46,7 +46,7 @@ const initialState: AppState = {
        { 
           id: 'vm2', 
           audioUrl: VOICE_MESSAGE_SAM_URL,
-          duration: 4,
+          duration: 2,
           senderRole: SenderRole.CAREGIVER, 
           senderName: 'Your Caregiver, Sam',
           timestamp: '11:15 AM'
