@@ -53,7 +53,7 @@ const App: React.FC = () => {
     const loggedRole = state.currentUser?.role?.toUpperCase?.();
     const viewRole = state.currentView === 'CAREGIVER' ? 'CAREGIVER' : state.currentView === 'FAMILY' ? 'FAMILY' : 'PATIENT';
     const effectiveRole = loggedRole || viewRole;
-    const canHear = (effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY');
+  const canHear = (effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY') || (state.devMode && (effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY'));
 
     if (!canHear) {
       soundService.stopSosAlert();
@@ -78,7 +78,7 @@ const App: React.FC = () => {
       soundService.stopSosAlert();
       soundService.stopFallAlert();
     };
-  }, [state.alerts, state.currentUser, state.devMode]);
+  }, [state.alerts, state.currentUser, state.devMode, state.currentView]);
 
   // Request native permissions (microphone/camera) when a user logs in on native platforms
   useEffect(() => {
