@@ -54,7 +54,8 @@ const soundService = {
    * Unlocks the browser's audio context by playing a muted sound.
    * This MUST be called from within a user-initiated event handler (e.g., a click).
    */
-  unlock: () => {
+  // Return a Promise so callers can wait for the unlock attempt to finish and then retry play.
+  unlock: async (): Promise<void> => {
     if (isUnlocked) return;
     try {
       console.log('Attempting to unlock audio context...');
@@ -62,15 +63,17 @@ const soundService = {
       audio.muted = true;
       const promise = audio.play();
       if (promise) {
-        promise.then(() => {
+        try {
+          await promise;
           audio.pause();
           audio.currentTime = 0;
           audio.muted = false;
           isUnlocked = true;
           console.log('Audio context unlocked successfully.');
-        }).catch(err => {
+        } catch (err) {
           console.error('Audio unlock failed. Subsequent sounds may not play until another interaction.', err);
-        });
+          // Leave isUnlocked false; caller may attempt again later on user interaction.
+        }
       }
     } catch (err) {
       console.error('Audio unlock failed synchronously', err);
@@ -85,7 +88,21 @@ const soundService = {
       audio.volume = 1.0;
       // Ensure we start from the beginning for loudness
       audio.currentTime = 0;
-      if (audio.paused) audio.play().then(() => { _isSosPlaying = true; }).catch(e => console.error('Error playing SOS sound:', e));
+      const doPlay = () => {
+        if (audio.paused) audio.play().then(() => { _isSosPlaying = true; }).catch(e => console.error('Error playing SOS sound:', e));
+      };
+
+      if (!isUnlocked) {
+        // Try to unlock, then attempt to play. If unlock fails, still attempt to play (may fail).
+        (soundService as any).unlock().then(() => {
+          doPlay();
+        }).catch(() => {
+          // Unlock failed; still try to play once (will likely fail on browsers blocking autoplay).
+          doPlay();
+        });
+      } else {
+        doPlay();
+      }
     } catch (e) {
       console.error('Error ensuring SOS audio element:', e);
     }
@@ -112,7 +129,19 @@ const soundService = {
       audio.muted = false;
       audio.volume = 1.0;
       audio.currentTime = 0;
-      if (audio.paused) audio.play().then(() => { _isFallPlaying = true; }).catch(e => console.error('Error playing Fall alert sound:', e));
+      const doPlay = () => {
+        if (audio.paused) audio.play().then(() => { _isFallPlaying = true; }).catch(s => console.error('Error playing Fall alert sound:', s));
+      };
+
+      if (!isUnlocked) {
+        (soundService as any).unlock().then(() => {
+          doPlay();
+        }).catch(() => {
+          doPlay();
+        });
+      } else {
+        doPlay();
+      }
     } catch (e) {
       console.error('Error ensuring Fall audio element:', e);
     }

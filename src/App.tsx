@@ -47,14 +47,17 @@ const App: React.FC = () => {
   // Centralized alert sound control: only play alerts for caregiver/family or when in devMode.
   useEffect(() => {
     const unack = state.alerts.filter(a => (a.type === 'SOS' || a.type === 'FALL') && a.requiresAcknowledgement);
-    // Determine effective role: prefer logged-in user's role, otherwise fall back
-    // to the global view mode (master-switch) so developers can test caregiver/family flows
-    // without logging in. We still never allow a PATIENT to be elevated by devMode.
+    // Determine effective role used for alert audio. Make the master-switch (`state.currentView`)
+    // authoritative for whether alerts should play. Only fall back to the logged-in user's role
+    // when the view is the default PATIENT view. This ensures switching the dashboard via the
+    // master switch immediately updates audio behaviour.
   const loggedRole = state.currentUser?.role?.toUpperCase?.();
   const viewRole = state.currentView === 'CAREGIVER' ? 'CAREGIVER' : state.currentView === 'FAMILY' ? 'FAMILY' : 'PATIENT';
-  const effectiveRole = loggedRole || viewRole;
-  const canHear = (effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY') || (state.devMode && (effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY'));
-  console.debug('[App] alert-effect', { effectiveRole, canHear, devMode: state.devMode, unackCount: unack.length, alerts: unack.map(a => ({ id: a.id, type: a.type })) });
+  // Prefer the viewRole unless it is PATIENT, in which case a logged-in caregiver/family
+  // should still be able to hear alerts.
+  const effectiveRole = viewRole !== 'PATIENT' ? viewRole : (loggedRole || viewRole);
+  const canHear = effectiveRole === 'CAREGIVER' || effectiveRole === 'FAMILY';
+  console.debug('[App] alert-effect', { effectiveRole, viewRole, loggedRole, canHear, devMode: state.devMode, unackCount: unack.length, alerts: unack.map(a => ({ id: a.id, type: a.type })) });
 
     if (!canHear) {
       soundService.stopSosAlert();
