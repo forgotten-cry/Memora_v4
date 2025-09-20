@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const PillIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -14,8 +13,8 @@ const PillIcon: React.FC<{ className?: string }> = ({ className }) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z" />
-    <path d="m8.5 8.5 7 7" />
+    <rect x="3" y="8" width="18" height="8" rx="4" ry="4" />
+    <line x1="7" y1="9" x2="17" y2="17" stroke="currentColor" strokeWidth="1.6" />
   </svg>
 );
 

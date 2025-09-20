@@ -20,11 +20,8 @@ interface AppState {
 }
 
 const initialState: AppState = {
-  reminders: [
-    { id: '1', title: 'Take Morning Pills', time: '08:00', completed: false, icon: 'medication', notified: false },
-    { id: '2', title: 'Eat Breakfast', time: '08:30', completed: false, icon: 'meal', notified: false },
-    { id: '3', title: 'Drink a glass of water', time: '10:00', completed: false, icon: 'hydration', notified: false },
-  ],
+  // Start with no pre-existing demo reminders. Caregivers can add reminders using the UI.
+  reminders: [],
   alerts: [],
   memories: [
     {

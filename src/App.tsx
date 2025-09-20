@@ -133,32 +133,50 @@ const App: React.FC = () => {
 
   // Effect for checking reminders
   useEffect(() => {
-    const reminderInterval = setInterval(() => {
-      const now = new Date();
-      // Get current time in minutes from midnight for easy comparison
-      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes(); 
+    // Maintain a map of active timers so we can clear them on update/unmount
+    const timers: Array<{ id: string; timerId: number }> = [];
 
-      state.reminders.forEach(reminder => {
-        if (reminder.completed || reminder.notified) {
-          return;
-        }
-
-        // Parse reminder time string (e.g., "08:30") into minutes from midnight
+    const scheduleForReminder = (reminder: any) => {
+      if (reminder.completed || reminder.notified) return;
+      try {
         const [hoursStr, minutesStr] = reminder.time.split(':');
-        let hours = parseInt(hoursStr, 10);
-        const minutes = parseInt(minutesStr, 10);
-        
-        const reminderTimeInMinutes = hours * 60 + minutes;
-
-        if (reminderTimeInMinutes <= currentTimeInMinutes) {
-          console.log(`Reminder due: ${reminder.title}`);
-          soundService.playReminderAlert();
-          dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminder.id });
+        const now = new Date();
+        const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hoursStr, 10), parseInt(minutesStr, 10), 0, 0);
+        // If target is in the past for today, schedule for tomorrow
+        if (target.getTime() <= Date.now()) {
+          target.setDate(target.getDate() + 1);
         }
-      });
-    }, 30000); // Check every 30 seconds for responsiveness
+        const ms = target.getTime() - Date.now();
+        console.debug('[App] scheduling reminder', { id: reminder.id, title: reminder.title, inMs: ms });
+        const tid = window.setTimeout(async () => {
+          try {
+            console.log(`Reminder due (timer): ${reminder.title}`);
+            // Play audible alert
+            soundService.playReminderAlert();
+            // Mark notified in app state
+            dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminder.id });
+            // Try to schedule a native/local notification as a backup
+            try {
+              await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
+            } catch (e) {
+              console.warn('localNotifications failed', e);
+            }
+          } catch (e) {
+            console.error('Error in reminder timer handler', e);
+          }
+        }, ms);
+        timers.push({ id: reminder.id, timerId: tid });
+      } catch (e) {
+        console.warn('Failed to schedule reminder', e);
+      }
+    };
 
-    return () => clearInterval(reminderInterval);
+    // Schedule timers for all reminders that are not completed/notified
+    state.reminders.forEach(scheduleForReminder);
+
+    return () => {
+      timers.forEach(t => clearTimeout(t.timerId));
+    };
   }, [state.reminders, dispatch]);
 
   // Banner: compute upcoming (<2 minutes) or due reminders to show a top banner

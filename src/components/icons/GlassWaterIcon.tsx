@@ -13,9 +13,8 @@ const GlassWaterIcon: React.FC<{ className?: string }> = ({ className }) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M15 2H9s-1 10 6 10" />
-    <path d="M12 22V7" />
-    <path d="M5 22h14" />
+    <path d="M6 3h12l-1 12a4 4 0 0 1-4 4H11a4 4 0 0 1-4-4L6 3z" />
+    <path d="M8 8h8" />
   </svg>
 );
 
