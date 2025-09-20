@@ -59,9 +59,9 @@ const schedule = async (opts: { id?: number; title: string; body?: string; sched
   // Web fallback: immediate notification if permission granted
   try {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const n = new Notification(opts.title, { body: opts.body });
-      return true;
+      const n: any = new Notification(opts.title, { body: opts.body });
+      // Return the notification instance so callers can manage it (close it when audio ends)
+      return n;
     }
   } catch (e) {
     console.warn('Web Notification schedule failed', e);

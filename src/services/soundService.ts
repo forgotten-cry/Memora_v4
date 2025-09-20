@@ -171,7 +171,7 @@ const soundService = {
 
   isReminderPlaying: () => !!_isReminderPlaying,
 
-  playReminderAlert: () => {
+  playReminderAlert: (): HTMLAudioElement | null => {
     try {
       const audio = ensureAudioElement('reminder');
       console.debug('[soundService] playReminderAlert -> src=', audio.src);
@@ -201,6 +201,8 @@ const soundService = {
     } catch (e) {
       console.error('Error ensuring Reminder audio element:', e);
     }
+    // Return the audio element so callers can observe 'ended' or close notifications when audio finishes
+    return reminderAudio;
   }
   ,
   stopReminderAlert: () => {

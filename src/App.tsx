@@ -9,7 +9,7 @@ import localNotifications from './services/localNotifications';
 import DemoLogin from './components/shared/DemoLogin';
 import LoginPage from './components/shared/LoginPage';
 import AcknowledgeModal from './components/shared/AcknowledgeModal';
-import ReminderBanner from './components/shared/ReminderBanner';
+// ReminderBanner removed per user's request: do not show upcoming reminders
 
 const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -151,15 +151,39 @@ const App: React.FC = () => {
         const tid = window.setTimeout(async () => {
           try {
             console.log(`Reminder due (timer): ${reminder.title}`);
-            // Play audible alert
-            soundService.playReminderAlert();
-            // Mark notified in app state
+            // Mark notified in app state first to prevent re-scheduling
             dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminder.id });
-            // Try to schedule a native/local notification as a backup
+
+            // Schedule/emit a local notification (native will schedule, web will return a Notification instance)
+            let webNotification: any = null;
             try {
-              await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
+              const res = await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
+              // When running on web, schedule() returns the created Notification instance
+              if (res && typeof (res as any).close === 'function') {
+                webNotification = res;
+              }
             } catch (e) {
               console.warn('localNotifications failed', e);
+            }
+
+            // Play audible alert and get the audio element back so we can close notification when it ends
+            const audioEl = soundService.playReminderAlert();
+            if (audioEl && webNotification) {
+              const onEnded = () => {
+                try {
+                  webNotification.close && webNotification.close();
+                } catch (e) {
+                  /* ignore */
+                }
+                audioEl.removeEventListener('ended', onEnded);
+              };
+              audioEl.addEventListener('ended', onEnded);
+              // Also close notification if the user clicks it (optional)
+              try {
+                webNotification.onclick = () => {
+                  try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
+                };
+              } catch (e) { /* ignore */ }
             }
           } catch (e) {
             console.error('Error in reminder timer handler', e);
@@ -179,37 +203,7 @@ const App: React.FC = () => {
     };
   }, [state.reminders, dispatch]);
 
-  // Banner: compute upcoming (<2 minutes) or due reminders to show a top banner
-  const [bannerReminder, setBannerReminder] = React.useState<{ reminderId: string; status: 'upcoming' | 'due' } | null>(null);
-  useEffect(() => {
-    const check = () => {
-      const now = new Date();
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      // find due reminder first
-      const due = state.reminders.find((r: any) => !r.completed && !r.notified && (() => {
-        const [h, m] = r.time.split(':');
-        return (parseInt(h, 10) * 60 + parseInt(m, 10)) <= nowMinutes;
-      })());
-      if (due) {
-        setBannerReminder({ reminderId: due.id, status: 'due' });
-        return;
-      }
-      // find upcoming within next 2 minutes
-      const upcoming = state.reminders.find((r: any) => !r.completed && !r.notified && (() => {
-        const [h, m] = r.time.split(':');
-        const t = parseInt(h, 10) * 60 + parseInt(m, 10);
-        return t > nowMinutes && t <= nowMinutes + 2;
-      })());
-      if (upcoming) {
-        setBannerReminder({ reminderId: upcoming.id, status: 'upcoming' });
-        return;
-      }
-      setBannerReminder(null);
-    };
-    check();
-    const id = setInterval(check, 15000);
-    return () => clearInterval(id);
-  }, [state.reminders]);
+  // No banner logic: notifications and sounds should only occur at exact scheduled time
 
 
   const handleSwitchView = () => {
@@ -286,11 +280,7 @@ const App: React.FC = () => {
           />
         );
       })()}
-      {bannerReminder && (() => {
-        const r = state.reminders.find(x => x.id === bannerReminder.reminderId);
-        if (!r) return null;
-        return <ReminderBanner reminder={r} status={bannerReminder.status} />;
-      })()}
+      {/* No bannerReminder UI; notifications only fire at exact time */}
       
       <div className="container mx-auto max-w-lg p-2 sm:p-4">
         {renderView()}
