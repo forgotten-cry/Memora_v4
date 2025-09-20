@@ -9,6 +9,7 @@ import localNotifications from './services/localNotifications';
 import DemoLogin from './components/shared/DemoLogin';
 import LoginPage from './components/shared/LoginPage';
 import AcknowledgeModal from './components/shared/AcknowledgeModal';
+import ReminderBanner from './components/shared/ReminderBanner';
 
 const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -160,6 +161,38 @@ const App: React.FC = () => {
     return () => clearInterval(reminderInterval);
   }, [state.reminders, dispatch]);
 
+  // Banner: compute upcoming (<2 minutes) or due reminders to show a top banner
+  const [bannerReminder, setBannerReminder] = React.useState<{ reminderId: string; status: 'upcoming' | 'due' } | null>(null);
+  useEffect(() => {
+    const check = () => {
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      // find due reminder first
+      const due = state.reminders.find((r: any) => !r.completed && !r.notified && (() => {
+        const [h, m] = r.time.split(':');
+        return (parseInt(h, 10) * 60 + parseInt(m, 10)) <= nowMinutes;
+      })());
+      if (due) {
+        setBannerReminder({ reminderId: due.id, status: 'due' });
+        return;
+      }
+      // find upcoming within next 2 minutes
+      const upcoming = state.reminders.find((r: any) => !r.completed && !r.notified && (() => {
+        const [h, m] = r.time.split(':');
+        const t = parseInt(h, 10) * 60 + parseInt(m, 10);
+        return t > nowMinutes && t <= nowMinutes + 2;
+      })());
+      if (upcoming) {
+        setBannerReminder({ reminderId: upcoming.id, status: 'upcoming' });
+        return;
+      }
+      setBannerReminder(null);
+    };
+    check();
+    const id = setInterval(check, 15000);
+    return () => clearInterval(id);
+  }, [state.reminders]);
+
 
   const handleSwitchView = () => {
     let next = ViewMode.PATIENT;
@@ -234,6 +267,11 @@ const App: React.FC = () => {
             onClose={() => setShowAckForAlertId(null)}
           />
         );
+      })()}
+      {bannerReminder && (() => {
+        const r = state.reminders.find(x => x.id === bannerReminder.reminderId);
+        if (!r) return null;
+        return <ReminderBanner reminder={r} status={bannerReminder.status} />;
       })()}
       
       <div className="container mx-auto max-w-lg p-2 sm:p-4">
