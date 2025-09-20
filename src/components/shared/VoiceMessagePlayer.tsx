@@ -74,7 +74,17 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
-  audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+    // If metadata already loaded before we attached the listener (common for local assets),
+    // call the handler immediately to persist the correct duration.
+    try {
+      if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
+        handleLoadedMetadata();
+      }
+    } catch (e) {
+      // Ignore cross-origin/read errors; listener will handle when available.
+    }
 
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
