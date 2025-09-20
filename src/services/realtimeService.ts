@@ -14,6 +14,9 @@ class RealtimeService {
       this.connected = true;
       this.statusCbs.forEach(cb => cb(true));
     });
+    this.ws.addEventListener('error', (ev) => {
+      console.error('[realtime] websocket error', ev);
+    });
     this.ws.addEventListener('message', ev => {
       try {
         const msg = JSON.parse(ev.data.toString());
@@ -47,7 +50,29 @@ class RealtimeService {
   login(username: string, password: string, room = 'demo') {
     if (!this.ws) throw new Error('WebSocket not connected');
     const payload = { username, password, room };
-    this.ws.send(JSON.stringify({ type: 'LOGIN', payload }));
+
+    const sendLogin = () => {
+      try {
+        this.ws?.send(JSON.stringify({ type: 'LOGIN', payload }));
+        console.debug('[realtime] LOGIN sent', { username, room });
+      } catch (e) {
+        console.error('[realtime] Error sending LOGIN', e);
+      }
+    };
+
+    // If socket is already open, send immediately. Otherwise queue until open.
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      sendLogin();
+      return;
+    }
+
+    if (this.ws) {
+      const onOpen = () => {
+        sendLogin();
+        try { this.ws?.removeEventListener('open', onOpen); } catch(e) { /* ignore */ }
+      };
+      this.ws.addEventListener('open', onOpen);
+    }
   }
 
   sendAction(action: any) {

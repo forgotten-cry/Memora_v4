@@ -11,16 +11,51 @@ const LoginPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const [devMode, setDevMode] = useState(false);
 
   const connect = () => {
+    (window as any).__DEMO_REALTIME_URL = wssUrl;
+    // Attempt to connect and wait briefly for the socket to open
     try {
-      (window as any).__DEMO_REALTIME_URL = wssUrl;
       realtimeService.connect(wssUrl);
-      realtimeService.login(username || 'demo', password || 'demo', 'demo');
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { username, role: username === 'caregiver' ? 'CAREGIVER' : username === 'patient' ? 'PATIENT' : 'FAMILY' } });
-      dispatch({ type: 'SET_DEV_MODE', payload: devMode });
-      if (onClose) onClose();
     } catch (e) {
-      console.error('Failed to connect', e);
+      console.error('Failed to start websocket', e);
+      setError('Failed to create websocket. Check URL and network.');
+      return;
     }
+
+    setConnecting(true);
+
+    // Wait for up to 5s for the websocket to report connected
+    let timeout = 5000;
+    let settled = false;
+    const unsub = realtimeService.onStatusChange(connected => {
+      if (settled) return;
+      if (connected) {
+        settled = true;
+        // send login — realtimeService will queue if needed
+        try {
+          realtimeService.login(username || 'demo', password || 'demo', 'demo');
+          dispatch({ type: 'LOGIN_SUCCESS', payload: { username, role: username === 'caregiver' ? 'CAREGIVER' : username === 'patient' ? 'PATIENT' : 'FAMILY' } });
+          dispatch({ type: 'SET_DEV_MODE', payload: devMode });
+          setConnecting(false);
+          unsub();
+          if (onClose) onClose();
+        } catch (e) {
+          console.error('Failed to send LOGIN', e);
+          setError('Connected but failed to send login.');
+          setConnecting(false);
+          unsub();
+        }
+      }
+    });
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      setConnecting(false);
+      setError('Timed out connecting to server. Check URL/network/ngrok.');
+      try { unsub(); } catch (e) { /* ignore */ }
+    }, timeout);
+    // clear timer on close/unmount not strictly necessary here but safe
+    return () => clearTimeout(timer);
   };
 
   const close = () => {
@@ -30,6 +65,8 @@ const LoginPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const modalRef = useRef<HTMLDivElement | null>(null);
   const firstInputRef = useRef<HTMLInputElement | null>(null);
   const lastActiveElement = useRef<HTMLElement | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Save last focused element to restore focus on close
@@ -106,7 +143,10 @@ const LoginPage: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
             </button>
           </div>
           <div>
-            <button onClick={connect} className="px-4 py-2 bg-slate-700 rounded">Connect</button>
+            <button onClick={connect} className="px-4 py-2 bg-slate-700 rounded" disabled={connecting}>
+              {connecting ? 'Connecting...' : 'Connect'}
+            </button>
+            {error && <div className="text-sm text-red-400 mt-2">{error}</div>}
           </div>
         </div>
       </div>
