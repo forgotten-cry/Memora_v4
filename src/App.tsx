@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PatientView from './components/patient/PatientView';
 import CaregiverView from './components/caregiver/CaregiverView';
 import FamilyView from './components/family/FamilyView';
@@ -15,6 +15,12 @@ const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
   // Use global currentView from app state so login can control the dashboard
   const viewMode = state.currentView || ViewMode.PATIENT;
+  // Keep a ref to the latest view so timers can check the current view when they fire
+  const currentViewRef = useRef(viewMode);
+
+  useEffect(() => {
+    currentViewRef.current = state.currentView || ViewMode.PATIENT;
+  }, [state.currentView]);
 
   const realtimeDotClass = (user: any) => {
     if (state.devMode) return 'bg-yellow-400';
@@ -154,36 +160,30 @@ const App: React.FC = () => {
             // Mark notified in app state first to prevent re-scheduling
             dispatch({ type: 'MARK_REMINDER_NOTIFIED', payload: reminder.id });
 
-            // Schedule/emit a local notification (native will schedule, web will return a Notification instance)
-            let webNotification: any = null;
+            // Play audible alert regardless of current view
+            const audioEl = soundService.playReminderAlert();
+
+            // Only show a visible notification popup when the current view is PATIENT
             try {
-              const res = await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
-              // When running on web, schedule() returns the created Notification instance
-              if (res && typeof (res as any).close === 'function') {
-                webNotification = res;
+              const isPatientView = (currentViewRef.current === ViewMode.PATIENT);
+              if (isPatientView) {
+                let webNotification: any = null;
+                const res = await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
+                if (res && typeof (res as any).close === 'function') {
+                  webNotification = res;
+                }
+
+                if (audioEl && webNotification) {
+                  const onEnded = () => {
+                    try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
+                    audioEl.removeEventListener('ended', onEnded);
+                  };
+                  audioEl.addEventListener('ended', onEnded);
+                  try { webNotification.onclick = () => { try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ } }; } catch (e) { /* ignore */ }
+                }
               }
             } catch (e) {
-              console.warn('localNotifications failed', e);
-            }
-
-            // Play audible alert and get the audio element back so we can close notification when it ends
-            const audioEl = soundService.playReminderAlert();
-            if (audioEl && webNotification) {
-              const onEnded = () => {
-                try {
-                  webNotification.close && webNotification.close();
-                } catch (e) {
-                  /* ignore */
-                }
-                audioEl.removeEventListener('ended', onEnded);
-              };
-              audioEl.addEventListener('ended', onEnded);
-              // Also close notification if the user clicks it (optional)
-              try {
-                webNotification.onclick = () => {
-                  try { webNotification.close && webNotification.close(); } catch (e) { /* ignore */ }
-                };
-              } catch (e) { /* ignore */ }
+              console.warn('Error showing notification (view gating)', e);
             }
           } catch (e) {
             console.error('Error in reminder timer handler', e);

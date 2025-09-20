@@ -30,30 +30,7 @@ const ReminderForm: React.FC = () => {
         };
 
         dispatch({ type: 'ADD_REMINDER', payload: newReminder });
-        // Schedule native notification at creation time (web will use in-app timers)
-        try {
-            const [hoursStr, minutesStr] = time.split(':');
-            const now = new Date();
-            const scheduleAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hoursStr, 10), parseInt(minutesStr, 10));
-            // If schedule time is in the past for today, schedule for tomorrow
-            if (scheduleAt.getTime() <= Date.now()) {
-                scheduleAt.setDate(scheduleAt.getDate() + 1);
-            }
-            // Only call the native scheduler when running on a native platform; on web we rely
-            // on the in-app setTimeout scheduling implemented in App.tsx to trigger the notification
-            // at the precise time.
-            // Dynamic import to check runtime platform without making the handler async
-            // (we don't need to await the result to continue UI flow)
-            import('../../services/localNotifications').then(mod => {
-                if (mod.isNative) {
-                    localNotifications.schedule({ id: Date.now(), title: newReminder.title, body: `Reminder: ${newReminder.title}`, scheduleAt });
-                }
-            }).catch(() => {
-                // ignore import errors - fallback to in-app timers
-            });
-        } catch (e) {
-            console.warn('Failed to schedule local notification for reminder', e);
-        }
+        // No creation-time scheduling: rely on in-app timers to fire notification/audio at the scheduled time
         setTitle('');
         setTime('');
         setIcon('medication');
