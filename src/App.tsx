@@ -168,10 +168,21 @@ const App: React.FC = () => {
               const isPatientView = (currentViewRef.current === ViewMode.PATIENT);
               if (isPatientView) {
                 let webNotification: any = null;
-                const res = await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
-                if (res && typeof (res as any).close === 'function') {
-                  webNotification = res;
-                }
+                  // Ensure we have permission to show a web notification. Request if necessary.
+                  try {
+                    const perm = await localNotifications.requestPermission();
+                    console.debug('[App] notification permission result', perm);
+                    if (perm !== 'granted') {
+                      console.warn('[App] notification permission not granted, skipping visible notification');
+                    } else {
+                      const res = await localNotifications.schedule({ id: Date.now(), title: reminder.title, body: reminder.title });
+                      if (res && typeof (res as any).close === 'function') {
+                        webNotification = res;
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('Error requesting permission or scheduling notification', e);
+                  }
 
                 if (audioEl && webNotification) {
                   const onEnded = () => {
