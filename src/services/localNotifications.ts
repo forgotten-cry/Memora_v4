@@ -2,7 +2,7 @@
 // Best-effort wrapper that uses Capacitor Local Notifications on native
 // and falls back to Web Notification API on the web.
 
-const isNative = typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform && (window as any).Capacitor.isNativePlatform();
+export const isNative = typeof (window as any).Capacitor !== 'undefined' && (window as any).Capacitor.isNativePlatform && (window as any).Capacitor.isNativePlatform();
 
 type NotifyPermission = 'granted' | 'denied' | 'prompt' | 'default';
 
