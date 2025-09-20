@@ -11,6 +11,7 @@ let reminderAudio: HTMLAudioElement | null = null;
 let isUnlocked = false;
 let _isSosPlaying = false;
 let _isFallPlaying = false;
+let _isReminderPlaying = false;
 
 function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement {
   if (kind === 'sos') {
@@ -21,7 +22,8 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
     // playsInline to avoid Safari going fullscreen on iOS
     (sosAudio as any).playsInline = true;
     try { sosAudio.load(); } catch (e) { /* ignore */ }
-    sosAudio.addEventListener('play', () => console.debug('[soundService] sosAudio play event')); 
+  console.debug('[soundService] created sosAudio', { src: sosAudio.src, loop: sosAudio.loop, preload: sosAudio.preload });
+  sosAudio.addEventListener('play', () => console.debug('[soundService] sosAudio play event'));
     sosAudio.addEventListener('pause', () => console.debug('[soundService] sosAudio pause event'));
     sosAudio.addEventListener('error', (ev) => console.error('[soundService] sosAudio error', ev));
     return sosAudio;
@@ -33,7 +35,8 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
     fallAudio.preload = 'auto';
     (fallAudio as any).playsInline = true;
     try { fallAudio.load(); } catch (e) { /* ignore */ }
-    fallAudio.addEventListener('play', () => console.debug('[soundService] fallAudio play event'));
+  console.debug('[soundService] created fallAudio', { src: fallAudio.src, loop: fallAudio.loop, preload: fallAudio.preload });
+  fallAudio.addEventListener('play', () => console.debug('[soundService] fallAudio play event'));
     fallAudio.addEventListener('pause', () => console.debug('[soundService] fallAudio pause event'));
     fallAudio.addEventListener('error', (ev) => console.error('[soundService] fallAudio error', ev));
     return fallAudio;
@@ -44,6 +47,7 @@ function ensureAudioElement(kind: 'sos' | 'fall' | 'reminder'): HTMLAudioElement
   reminderAudio.preload = 'auto';
   (reminderAudio as any).playsInline = true;
   try { reminderAudio.load(); } catch (e) { /* ignore */ }
+  console.debug('[soundService] created reminderAudio', { src: reminderAudio.src, loop: reminderAudio.loop, preload: reminderAudio.preload });
   reminderAudio.addEventListener('play', () => console.debug('[soundService] reminderAudio play event'));
   reminderAudio.addEventListener('error', (ev) => console.error('[soundService] reminderAudio error', ev));
   return reminderAudio;
@@ -165,13 +169,51 @@ const soundService = {
   isSosPlaying: () => !!_isSosPlaying,
   isFallPlaying: () => !!_isFallPlaying,
 
+  isReminderPlaying: () => !!_isReminderPlaying,
+
   playReminderAlert: () => {
     try {
       const audio = ensureAudioElement('reminder');
+      console.debug('[soundService] playReminderAlert -> src=', audio.src);
+      audio.muted = false;
+      audio.volume = 1.0;
       audio.currentTime = 0;
-      audio.play().catch(e => console.error('Error playing reminder sound:', e));
+
+      const doPlay = () => {
+        console.debug('[soundService] reminder audio state before play', { paused: audio.paused, readyState: audio.readyState, muted: audio.muted, volume: audio.volume });
+        if (audio.paused) audio.play().then(() => { _isReminderPlaying = true; console.debug('[soundService] reminder audio started playing'); }).catch(e => console.error('Error playing reminder sound:', e));
+      };
+
+      if (!isUnlocked) {
+        // Attempt to unlock first (muted) then play
+        (soundService as any).unlock().then(() => {
+          try { audio.load(); } catch (e) { /* ignore */ }
+          doPlay();
+        }).catch(() => {
+          // Unlock failed; still try to play once
+          try { audio.load(); } catch (e) { /* ignore */ }
+          doPlay();
+        });
+      } else {
+        try { audio.load(); } catch (e) { /* ignore */ }
+        doPlay();
+      }
     } catch (e) {
       console.error('Error ensuring Reminder audio element:', e);
+    }
+  }
+  ,
+  stopReminderAlert: () => {
+    if (reminderAudio) {
+      try {
+        if (!reminderAudio.paused) {
+          reminderAudio.pause();
+          reminderAudio.currentTime = 0;
+        }
+        _isReminderPlaying = false;
+      } catch (e) {
+        console.error('Error stopping reminder audio', e);
+      }
     }
   }
 };
