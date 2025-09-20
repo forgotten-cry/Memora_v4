@@ -28,6 +28,7 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [sendTranscriptOnEnd, setSendTranscriptOnEnd] = useState(false);
+  const [supportsSpeech, setSupportsSpeech] = useState(false);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +68,7 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
   useEffect(() => {
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognitionAPI) {
+        setSupportsSpeech(true);
         const recognition = new SpeechRecognitionAPI();
         recognition.continuous = false;
         recognition.lang = 'en-US';
@@ -79,6 +81,8 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
         recognition.onresult = (event: any) => setInput(event.results[event.results.length - 1][0].transcript);
         recognition.onerror = (event: any) => { console.error("Speech recognition error:", event.error); setIsListening(false); };
         recognitionRef.current = recognition;
+    } else {
+        setSupportsSpeech(false);
     }
 
     return () => {
@@ -151,7 +155,7 @@ const AICompanion: React.FC<AICompanionProps> = ({ onBack }) => {
           className="flex-grow px-4 py-3 bg-slate-800/70 border border-slate-700 rounded-full text-white placeholder-slate-400 focus:outline-none focus:border-slate-600 focus:ring-1 focus:ring-slate-600 transition-colors disabled:bg-slate-800/40 disabled:cursor-not-allowed"
           disabled={isLoading || isListening || !isGeminiConfigured}
         />
-        {recognitionRef.current && (
+        {supportsSpeech && recognitionRef.current && (
             <button
               onClick={handleListen}
               disabled={isLoading || !isGeminiConfigured}

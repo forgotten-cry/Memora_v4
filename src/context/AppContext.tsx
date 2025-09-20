@@ -137,6 +137,13 @@ const appReducer = (state: AppState, action: AppActionAll): AppState => {
             ...state,
             voiceMessages: [action.payload, ...state.voiceMessages]
         };
+  case 'UPDATE_VOICE_MESSAGE_DURATION':
+    return {
+      ...state,
+      voiceMessages: state.voiceMessages.map(vm =>
+        vm.id === action.payload.id ? { ...vm, duration: action.payload.duration } : vm
+      )
+    };
     case 'LOG_EMOTION':
       // Do not create duplicate emotion alerts in quick succession
       if (state.alerts[0]?.type === 'EMOTION' && state.alerts[0]?.message.includes(action.payload.emotion)) {

@@ -90,6 +90,7 @@ export type AppAction =
   | { type: 'ADD_QUOTE'; payload: SharedQuote }
   | { type: 'LOG_EMOTION'; payload: { emotion: string } }
   | { type: 'ADD_VOICE_MESSAGE'; payload: VoiceMessage }
+  | { type: 'UPDATE_VOICE_MESSAGE_DURATION'; payload: { id: string; duration: number } }
   | { type: 'ACKNOWLEDGE_ALERTS' }
   | { type: 'MARK_REMINDER_NOTIFIED'; payload: string };
 

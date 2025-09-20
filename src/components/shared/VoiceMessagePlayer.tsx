@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useAppContext } from '../../context/AppContext';
 import { VoiceMessage, SenderRole } from '../../types';
 import nativeTts from '../../services/nativeTts';
 import PlayIcon from '../icons/PlayIcon';
@@ -29,6 +30,7 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { dispatch } = useAppContext();
   const ttsUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [usingTTS, setUsingTTS] = useState(false);
   const isUserMessage = message.senderRole === SenderRole.PATIENT;
@@ -56,14 +58,29 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({ message }) => {
       }
     };
 
+    const handleLoadedMetadata = () => {
+      // When metadata is loaded, update stored duration if it differs
+      if (!audio) return;
+      const actualDuration = Math.round(audio.duration * 100) / 100; // round to 2 decimals
+      if (actualDuration && Math.abs((message.duration || 0) - actualDuration) > 0.2) {
+        try {
+          dispatch({ type: 'UPDATE_VOICE_MESSAGE_DURATION', payload: { id: message.id, duration: actualDuration } });
+        } catch (e) {
+          console.warn('Failed to dispatch duration update', e);
+        }
+      }
+    };
+
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
+  audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
     };
   }, []);
 
